@@ -28,9 +28,10 @@
             #printable-area, #printable-area * { visibility: visible; }
             #printable-area { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; }
             .no-print { display: none !important; }
-            .print-report-title { display: block !important; text-align: center !important; margin: 0 0 14px 0 !important; padding: 0 0 8px 0 !important; width: 100% !important; }
-            .print-report-title h1 { margin: 0 !important; font-size: 20pt !important; font-weight: 700 !important; line-height: 1.35 !important; text-align: center !important; color: #111827 !important; }
-            .print-report-title p { margin: 4px 0 0 0 !important; font-size: 13pt !important; font-weight: 600 !important; line-height: 1.35 !important; text-align: center !important; color: #374151 !important; }
+            .print-page-break { page-break-before: always; break-before: page; margin-top: 20px; }
+            .print-section-header { display: block !important; text-align: center !important; margin: 0 0 14px 0 !important; padding: 0 0 8px 0 !important; width: 100% !important; }
+            .print-section-header h1 { margin: 0 !important; font-size: 20pt !important; font-weight: 700 !important; line-height: 1.35 !important; text-align: center !important; color: #111827 !important; }
+            .print-section-header p { margin: 4px 0 0 0 !important; font-size: 13pt !important; font-weight: 600 !important; line-height: 1.35 !important; text-align: center !important; color: #374151 !important; }
             @page { size: landscape; margin: 10mm; }
         }
         .clock-face {
@@ -264,15 +265,11 @@
             </div>
 
             <div id="printable-area" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden p-2 sm:p-4">
-                <div id="print-report-title" class="print-report-title hidden">
-                    <h1>รายงานการอยู่เวรรักษาการณ์</h1>
-                    <p id="print-report-location">สำนักงาน อบต.เขากอบ</p>
-                </div>
-                <div class="p-3 bg-gray-50 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                    <span class="font-semibold text-gray-800 text-sm sm:text-base" id="table-header-title"></span>
+                <div class="p-3 bg-gray-50 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-3 no-print">
+                    <span class="font-semibold text-gray-800 text-sm sm:text-base">รายงานการอยู่เวรรักษาการณ์</span>
                     
                     <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between md:justify-end">
-                        <div class="flex items-center gap-2 no-print">
+                        <div class="flex items-center gap-2">
                             <label class="text-xs sm:text-sm text-gray-600 whitespace-nowrap"><i class="fas fa-filter mr-1"></i>แสดงรายการ:</label>
                             <select id="table-filter-loc" onchange="renderGuardTable()" class="border border-gray-300 rounded px-2 py-1.5 text-xs sm:text-sm bg-white font-medium text-blue-800">
                                 <option value="all">ทั้งหมดทุกสถานที่</option>
@@ -281,29 +278,12 @@
                             </select>
                         </div>
 
-                        <button onclick="printGuardReport()" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-xs sm:text-sm rounded-md shadow transition no-print">
+                        <button onclick="printGuardReport()" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-xs sm:text-sm rounded-md shadow transition">
                             <i class="fas fa-print mr-2"></i>พิมพ์ / บันทึกเป็น PDF
                         </button>
                     </div>
                 </div>
-                <div class="overflow-x-auto mt-2">
-                    <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm border border-gray-200">
-                        <thead class="bg-gray-100 text-gray-700">
-                            <tr>
-                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ชื่อ - นามสกุล</th>
-                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ตำแหน่ง</th>
-                                <th class="px-2 py-2 text-center font-semibold border border-gray-300">เวลาเริ่มเวร</th>
-                                <th class="px-2 py-2 text-center font-semibold border border-gray-300">เวลาสิ้นสุด</th>
-                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ผู้ส่งมอบเวร</th>
-                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ทรัพย์สิน/กุญแจ</th>
-                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">เหตุการณ์</th>
-                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ผู้รับเวรต่อ</th>
-                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ผู้ตรวจเวร</th>
-                            </tr>
-                        </thead>
-                        <tbody id="guard-table-body" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                    </table>
+                <div id="printable-tables-container" class="mt-2 space-y-8">
                 </div>
             </div>
         </div>
@@ -965,14 +945,6 @@
         }
 
         function printGuardReport() {
-            const title = document.getElementById('print-report-location');
-            if (title) {
-                if (currentLocation === 'guesthouse') {
-                    title.innerText = 'บ้านพักเรือนรับรอง 80 พรรษา';
-                } else {
-                    title.innerText = 'สำนักงาน อบต.เขากอบ';
-                }
-            }
             setTimeout(() => window.print(), 50);
         }
 
@@ -991,34 +963,88 @@
         }
 
         function renderGuardTable() {
-            const tbody = document.getElementById('guard-table-body');
+            const container = document.getElementById('printable-tables-container');
             const filterVal = document.getElementById('table-filter-loc').value;
-            tbody.innerHTML = '';
+            container.innerHTML = '';
 
-            let filteredRecords = filterVal !== 'all' ? guardRecords.filter(r => r.locationName === filterVal) : guardRecords;
-            filteredRecords = sortRecords(filteredRecords);
+            const locations = [
+                { key: 'สำนักงาน อบต.', title: 'สำนักงาน อบต.เขากอบ' },
+                { key: 'บ้านพักเรือนรับรอง', title: 'บ้านพักเรือนรับรอง 80 พรรษา' }
+            ];
 
-            if (filteredRecords.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-gray-400">ยังไม่มีประวัติการบันทึกเวรยาม</td></tr>`;
-                return;
-            }
+            let targetLocs = filterVal === 'all' 
+                ? locations 
+                : locations.filter(l => l.key === filterVal);
 
-            filteredRecords.forEach(record => {
-                const tr = document.createElement('tr');
-                const statusColor = record.event === 'ปกติ' ? 'text-green-700' : 'text-red-600 font-medium';
-                tr.innerHTML = `
-                    <td class="px-2 py-2 text-gray-900 font-medium border border-gray-200">${record.fullName}</td>
-                    <td class="px-2 py-2 text-gray-700 border border-gray-200">${record.position}</td>
-                    <td class="px-2 py-2 text-center text-gray-600 border border-gray-200 whitespace-nowrap">${formatThaiDate(record.startDate)} (${record.startTime})</td>
-                    <td class="px-2 py-2 text-center text-gray-600 border border-gray-200 whitespace-nowrap">${formatThaiDate(record.endDate)} (${record.endTime})</td>
-                    <td class="px-2 py-2 text-gray-700 border border-gray-200">${record.handover}</td>
-                    <td class="px-2 py-2 text-gray-700 border border-gray-200">${record.keys}</td>
-                    <td class="px-2 py-2 ${statusColor} border border-gray-200">${record.event}</td>
-                    <td class="px-2 py-2 text-gray-700 border border-gray-200">${record.receiver}</td>
-                    <td class="px-2 py-2 text-gray-700 border border-gray-200">${record.inspector || '-'}</td>
+            let renderedCount = 0;
+
+            targetLocs.forEach((loc, idx) => {
+                let recs = guardRecords.filter(r => r.locationName === loc.key);
+                recs = sortRecords(recs);
+
+                if (recs.length === 0 && filterVal !== 'all') {
+                    container.innerHTML = `<div class="p-6 text-center text-gray-400">ยังไม่มีประวัติการบันทึกเวรยามในหมวดนี้</div>`;
+                    return;
+                }
+                if (recs.length === 0) return;
+
+                renderedCount++;
+                const secDiv = document.createElement('div');
+                if (renderedCount > 1 && filterVal === 'all') {
+                    secDiv.className = 'print-page-break';
+                }
+
+                secDiv.innerHTML = `
+                    <div class="print-section-header hidden">
+                        <h1>รายงานการอยู่เวรรักษาการณ์</h1>
+                        <p>${loc.title}</p>
+                    </div>
+                    <div class="px-3 py-2 bg-blue-50 border border-b-0 border-blue-100 font-semibold text-blue-900 text-sm rounded-t flex justify-between items-center">
+                        <span><i class="fas fa-building mr-2"></i>${loc.title}</span>
+                        <span class="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full">${recs.length} รายการ</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm border border-gray-200">
+                            <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="px-2 py-2 text-left font-semibold border border-gray-300">ชื่อ - นามสกุล</th>
+                                    <th class="px-2 py-2 text-left font-semibold border border-gray-300">ตำแหน่ง</th>
+                                    <th class="px-2 py-2 text-center font-semibold border border-gray-300">เวลาเริ่มเวร</th>
+                                    <th class="px-2 py-2 text-center font-semibold border border-gray-300">เวลาสิ้นสุด</th>
+                                    <th class="px-2 py-2 text-left font-semibold border border-gray-300">ผู้ส่งมอบเวร</th>
+                                    <th class="px-2 py-2 text-left font-semibold border border-gray-300">ทรัพย์สิน/กุญแจ</th>
+                                    <th class="px-2 py-2 text-left font-semibold border border-gray-300">เหตุการณ์</th>
+                                    <th class="px-2 py-2 text-left font-semibold border border-gray-300">ผู้รับเวรต่อ</th>
+                                    <th class="px-2 py-2 text-left font-semibold border border-gray-300">ผู้ตรวจเวร</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${recs.map(record => {
+                                    const statusColor = record.event === 'ปกติ' ? 'text-green-700' : 'text-red-600 font-medium';
+                                    return `
+                                        <tr>
+                                            <td class="px-2 py-2 text-gray-900 font-medium border border-gray-200">${escapeHtml(record.fullName)}</td>
+                                            <td class="px-2 py-2 text-gray-700 border border-gray-200">${escapeHtml(record.position)}</td>
+                                            <td class="px-2 py-2 text-center text-gray-600 border border-gray-200 whitespace-nowrap">${formatThaiDate(record.startDate)} (${escapeHtml(record.startTime)})</td>
+                                            <td class="px-2 py-2 text-center text-gray-600 border border-gray-200 whitespace-nowrap">${formatThaiDate(record.endDate)} (${escapeHtml(record.endTime)})</td>
+                                            <td class="px-2 py-2 text-gray-700 border border-gray-200">${escapeHtml(record.handover)}</td>
+                                            <td class="px-2 py-2 text-gray-700 border border-gray-200">${escapeHtml(record.keys)}</td>
+                                            <td class="px-2 py-2 ${statusColor} border border-gray-200">${escapeHtml(record.event)}</td>
+                                            <td class="px-2 py-2 text-gray-700 border border-gray-200">${escapeHtml(record.receiver)}</td>
+                                            <td class="px-2 py-2 text-gray-700 border border-gray-200">${escapeHtml(record.inspector || '-')}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 `;
-                tbody.appendChild(tr);
+                container.appendChild(secDiv);
             });
+
+            if (renderedCount === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-gray-400">ยังไม่มีประวัติการบันทึกเวรยาม</div>`;
+            }
         }
 
         function renderAdminTable() {
