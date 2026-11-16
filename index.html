@@ -511,7 +511,8 @@
             ],
             guesthouse: [
                 "นายสุธน ศรีโภคา", "นายประสาน แต้มเพชร", "นายจรัญ พระเหมา",
-                "นายภานุวัฒน์ คงรอด", "จ่าสิบเอกจักรพล ศรีจันทร์", "นายเอกลักษณ์ คดีพิศาล"
+                "นายภานุวัฒน์ คงรอด", "จ่าสิบเอกจักรพล ศรีจันทร์", "นายเอกลักษณ์ คดีพิศาล",
+                "นายเช้น ชัยคช"
             ]
         };
 
@@ -527,7 +528,7 @@
             ],
             guesthouse: [
                 "นักป้องกันและบรรเทาฯ", "ผู้ช่วยนักป้องกันและบรรเทา", "พนักงานขับรถยนต์(กู้ชีพ)",
-                "คนงานทั่วไป(กู้ชีพ)", "พนักงานขับรถบรรทุกขยะ", "คนงานประจำรถขยะ"
+                "คนงานทั่วไป(กู้ชีพ)", "พนักงานขับรถบรรทุกขยะ", "คนงานประจำรถขยะ", "คนงานทั่วไป"
             ]
         };
 
@@ -1176,35 +1177,106 @@
             if (!record) return;
 
             Swal.fire({
-                title: 'แก้ไขข้อมูลเวรยาม',
+                title: 'แก้ไขข้อมูลเวรยามแบบละเอียด',
+                customClass: {
+                    popup: '!max-w-2xl'
+                },
                 html: `
-                    <div class="text-left space-y-3 text-sm">
-                        <div>
-                            <label class="block text-gray-700 font-medium">ชื่อ-นามสกุล:</label>
-                            <input id="swal-fullname" class="swal2-input !w-full !m-0" value="${record.fullName}">
+                    <div class="text-left space-y-3 text-xs sm:text-sm max-h-[70vh] overflow-y-auto pr-1">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">สถานที่:</label>
+                                <select id="swal-edit-loc" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm bg-white">
+                                    <option value="สำนักงาน อบต." ${record.locationName === 'สำนักงาน อบต.' ? 'selected' : ''}>สำนักงาน อบต.</option>
+                                    <option value="บ้านพักเรือนรับรอง" ${record.locationName === 'บ้านพักเรือนรับรอง' ? 'selected' : ''}>บ้านพักเรือนรับรอง</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">วันที่บันทึก:</label>
+                                <input type="date" id="swal-edit-recordDate" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${record.recordDate || ''}">
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-gray-700 font-medium">ตำแหน่ง:</label>
-                            <input id="swal-position" class="swal2-input !w-full !m-0" value="${record.position}">
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">ชื่อ-นามสกุล:</label>
+                                <input id="swal-edit-fullname" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.fullName)}">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">ตำแหน่ง:</label>
+                                <input id="swal-edit-position" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.position)}">
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-gray-700 font-medium">เหตุการณ์:</label>
-                            <input id="swal-event" class="swal2-input !w-full !m-0" value="${record.event}">
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-2">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">วันที่เริ่มเวร:</label>
+                                <input type="date" id="swal-edit-startDate" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${record.startDate || ''}">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">เวลาเริ่มเวร:</label>
+                                <input id="swal-edit-startTime" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.startTime)}">
+                            </div>
                         </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">ถึงวันที่ (สิ้นสุด):</label>
+                                <input type="date" id="swal-edit-endDate" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${record.endDate || ''}">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">เวลาสิ้นสุดเวร:</label>
+                                <input id="swal-edit-endTime" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.endTime)}">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-2">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">ผู้ส่งมอบเวร:</label>
+                                <input id="swal-edit-handover" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.handover)}">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">ผู้รับเวร (ผลัดต่อไป):</label>
+                                <input id="swal-edit-receiver" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.receiver)}">
+                            </div>
+                        </div>
+
                         <div>
-                            <label class="block text-gray-700 font-medium">ผู้ตรวจเวร:</label>
-                            <input id="swal-inspector" class="swal2-input !w-full !m-0" value="${record.inspector || '-'}">
+                            <label class="block text-gray-700 font-medium mb-1">ทรัพย์สิน / กุญแจ:</label>
+                            <input id="swal-edit-keys" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.keys)}">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-2">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">เหตุการณ์:</label>
+                                <input id="swal-edit-event" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.event)}">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">ผู้ตรวจเวร:</label>
+                                <input id="swal-edit-inspector" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.inspector || '-')}">
+                            </div>
                         </div>
                     </div>
                 `,
                 focusConfirm: false,
                 showCancelButton: true,
                 confirmButtonText: 'บันทึกการแก้ไข',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#2563eb',
                 preConfirm: () => ({
-                    fullName: document.getElementById('swal-fullname').value,
-                    position: document.getElementById('swal-position').value,
-                    event: document.getElementById('swal-event').value,
-                    inspector: document.getElementById('swal-inspector').value
+                    locationName: document.getElementById('swal-edit-loc').value,
+                    recordDate: document.getElementById('swal-edit-recordDate').value,
+                    fullName: document.getElementById('swal-edit-fullname').value,
+                    position: document.getElementById('swal-edit-position').value,
+                    startDate: document.getElementById('swal-edit-startDate').value,
+                    startTime: document.getElementById('swal-edit-startTime').value,
+                    endDate: document.getElementById('swal-edit-endDate').value,
+                    endTime: document.getElementById('swal-edit-endTime').value,
+                    handover: document.getElementById('swal-edit-handover').value,
+                    receiver: document.getElementById('swal-edit-receiver').value,
+                    keys: document.getElementById('swal-edit-keys').value,
+                    event: document.getElementById('swal-edit-event').value,
+                    inspector: document.getElementById('swal-edit-inspector').value
                 })
             }).then(async (result) => {
                 if (result.isConfirmed && result.value) {
