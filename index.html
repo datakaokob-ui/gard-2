@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการและบันทึกเวรรักษาการณ์ อบต.เขากอบ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Sarabun', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area * { visibility: visible; }
+            #printable-area { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; }
+            .no-print { display: none !important; }
+            .print-report-title { display: block !important; text-align: center !important; margin: 0 0 14px 0 !important; padding: 0 0 8px 0 !important; width: 100% !important; }
+            .print-report-title h1 { margin: 0 !important; font-size: 20pt !important; font-weight: 700 !important; line-height: 1.35 !important; text-align: center !important; color: #111827 !important; }
+            .print-report-title p { margin: 4px 0 0 0 !important; font-size: 13pt !important; font-weight: 600 !important; line-height: 1.35 !important; text-align: center !important; color: #374151 !important; }
+            @page { size: landscape; margin: 10mm; }
+        }
+        .clock-face {
+            width: 32px; height: 32px; border: 2px solid white; border-radius: 50%;
+            position: relative; background: #1e40af;
+        }
+        .hand {
+            position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; border-radius: 2px;
+        }
+        .hour-hand { width: 2px; height: 8px; background: #ffffff; margin-left: -1px; }
+        .min-hand { width: 1.5px; height: 11px; background: #93c5fd; margin-left: -0.75px; }
+        .sec-hand { width: 1px; height: 12px; background: #f87171; margin-left: -0.5px; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-gray-800 flex flex-col min-h-screen">
+
+    <!-- Emergency Contact Modal Popup -->
+    <div id="emergency-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 no-print px-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 text-gray-800 border-t-4 border-red-500 transform transition-all">
+            <div class="flex justify-between items-center pb-3 border-b mb-4">
+                <h3 class="text-lg font-bold text-red-600 flex items-center">
+                    <i class="fas fa-phone-alt mr-2"></i>เบอร์โทรศัพท์ติดต่อฉุกเฉิน
+                </h3>
+                <button onclick="closeEmergencyModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none p-1">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-sm mb-6">
+                <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded border">
+                    <span class="font-medium text-gray-700">นายก อบต.:</span>
+                    <a href="tel:0869569452" class="text-red-600 font-bold hover:text-red-700 text-base no-underline">086-9569452</a>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded border">
+                    <span class="font-medium text-gray-700">ปลัด อบต.:</span>
+                    <a href="tel:0934520806" class="text-red-600 font-bold hover:text-red-700 text-base no-underline">093-4520806</a>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded border">
+                    <span class="font-medium text-gray-700">สภ.ห้วยยอด:</span>
+                    <a href="tel:075272148" class="text-red-600 font-bold hover:text-red-700 text-base no-underline">075-272148</a>
+                </div>
+            </div>
+            <button onclick="closeEmergencyModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-4 rounded-md transition duration-200 text-sm shadow">
+                รับทราบ / ปิดหน้าต่าง
+            </button>
+        </div>
+    </div>
+
+    <nav class="bg-blue-800 text-white shadow-md no-print sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="clock-face shadow-sm flex items-center justify-center">
+                        <div id="hour-hand" class="hand hour-hand"></div>
+                        <div id="min-hand" class="hand min-hand"></div>
+                        <div id="sec-hand" class="hand sec-hand"></div>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-sm sm:text-base tracking-wide block">อบต.เขากอบ</span>
+                        <span id="current-thai-date" class="text-xs text-blue-200 block"></span>
+                    </div>
+                </div>
+                
+                <div class="flex md:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-white hover:text-gray-200 focus:outline-none p-2">
+                        <i id="hamburger-icon" class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+
+                <div class="hidden md:flex items-center gap-2">
+                    <button onclick="switchView('user')" id="nav-btn-user" class="px-3 py-1.5 bg-blue-900 text-white rounded-md text-sm font-medium transition shadow-inner">
+                        <i class="fas fa-home mr-1"></i> หน้าหลักบันทึกเวร
+                    </button>
+                    <button onclick="switchView('admin')" id="nav-btn-admin" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition">
+                        <i class="fas fa-user-shield mr-1"></i> จัดการระบบ (Admin)
+                    </button>
+                    <div class="h-6 w-px bg-blue-600 mx-1"></div>
+                    <button onclick="switchLocation('sao')" id="desktop-loc-sao" class="px-3 py-1.5 bg-blue-900 text-white rounded-md text-xs font-medium transition shadow-inner">
+                        สำนักงาน
+                    </button>
+                    <button onclick="switchLocation('guesthouse')" id="desktop-loc-guesthouse" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-xs font-medium transition">
+                        เรือนรับรอง
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-blue-900 border-t border-blue-700 px-4 pt-2 pb-4 space-y-2">
+            <button onclick="switchView('user'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-blue-800 text-white">
+                <i class="fas fa-home mr-2"></i> หน้าหลักบันทึกเวร
+            </button>
+            <button onclick="switchView('admin'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 text-gray-200">
+                <i class="fas fa-user-shield mr-2"></i> จัดการระบบ (Admin)
+            </button>
+            <hr class="border-blue-700 my-1">
+            <button onclick="switchLocation('sao'); toggleMobileMenu();" id="mobile-loc-sao" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-blue-800 text-white">
+                <i class="fas fa-building mr-2"></i> สำนักงาน อบต.เขากอบ
+            </button>
+            <button onclick="switchLocation('guesthouse'); toggleMobileMenu();" id="mobile-loc-guesthouse" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 text-gray-200">
+                <i class="fas fa-home mr-2"></i> บ้านพักเรือนรับรอง 80 พรรษา
+            </button>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-4 sm:mt-6 mb-12 flex-grow w-full">
+
+        <div id="view-user" class="space-y-6 block">
+
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200 no-print">
+                <h2 class="text-lg sm:text-xl font-semibold mb-4 text-blue-800 border-b pb-2" id="form-title">บันทึกการอยู่เวรรักษาการณ์: สำนักงาน อบต.เขากอบ</h2>
+                
+                <form id="guard-form" onsubmit="submitGuardLog(event)" class="space-y-6">
+                    
+                    <div class="bg-blue-50 p-4 rounded-md border border-blue-100">
+                        <h3 class="font-medium text-blue-800 mb-3"><i class="fas fa-user mr-2"></i>1. ข้อมูลผู้ปฏิบัติหน้าที่</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-700 mb-1">วันที่บันทึก</label>
+                                <input type="date" id="g-record-date" required class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล (เลือกจากรายชื่อ)</label>
+                                <select id="g-fullname" required class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm">
+                                    <option value="">-- กรุณาเลือกชื่อผู้เข้าเวร --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-700 mb-1">ตำแหน่ง</label>
+                                <select id="g-position" required class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm">
+                                    <option value="">-- กรุณาเลือกตำแหน่ง --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <h3 class="font-medium text-gray-800 mb-3"><i class="fas fa-clock mr-2"></i>2. ช่วงเวลาปฏิบัติหน้าที่</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">เลือกช่วงเวลาปฏิบัติงาน</label>
+                                <div class="flex flex-wrap gap-6 text-sm">
+                                    <label id="shift-day-label" class="cursor-pointer flex items-center bg-white px-3 py-2 rounded border border-gray-200 shadow-sm">
+                                        <input type="radio" name="duty_shift" value="08.30-16.30" checked onchange="onShiftChange()" class="mr-2 w-4 h-4 text-blue-600"> 
+                                        08.30-16.30 น. (เวรกลางวัน)
+                                    </label>
+                                    <label class="cursor-pointer flex items-center bg-white px-3 py-2 rounded border border-gray-200 shadow-sm">
+                                        <input type="radio" name="duty_shift" value="16.30-08.30" onchange="onShiftChange()" class="mr-2 w-4 h-4 text-blue-600"> 
+                                        16.30-08.30 น. (เวรกลางคืน / ข้ามวัน)
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200">
+                                <div>
+                                    <label class="block text-sm text-gray-700 mb-1">วันที่เริ่มเวร</label>
+                                    <input type="date" id="g-start-date" required onchange="onStartDateChange()" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-700 mb-1">ถึงวันที่</label>
+                                    <input type="date" id="g-end-date" required class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <h3 class="font-medium text-gray-800 mb-3"><i class="fas fa-key mr-2"></i>3. การรับมอบหน้าที่และกุญแจ</h3>
+                        <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล (ผู้ส่งมอบ)</label>
+                                <select id="g-handover-name" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm">
+                                    <option value="">-- กรุณาเลือกชื่อผู้ส่งมอบเวร --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-700 mb-1">ตำแหน่ง (ผู้ส่งมอบ)</label>
+                                <select id="g-handover-position" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm">
+                                    <option value="">-- กรุณาเลือกตำแหน่งผู้ส่งมอบเวร --</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">พร้อมรับมอบสิ่งของต่อไปนี้:</label>
+                            <div id="dynamic-keys-container" class="space-y-2 text-sm"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <h3 class="font-medium text-gray-800 mb-3"><i class="fas fa-clipboard-check mr-2"></i>4. รายงานเหตุการณ์และการส่งมอบ</h3>
+                        <div class="mb-4 text-sm">
+                            <label class="block font-medium text-gray-700 mb-2">ในระหว่างปฏิบัติหน้าที่</label>
+                            <div class="flex flex-col gap-2">
+                                <label class="cursor-pointer"><input type="radio" name="event_status" value="เหตุการณ์ปกติ" checked onchange="toggleEventInput(false)" class="mr-2"> เหตุการณ์ปกติ</label>
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                    <label class="whitespace-nowrap cursor-pointer"><input type="radio" name="event_status" value="เหตุการณ์ไม่ปกติ" onchange="toggleEventInput(true)" class="mr-2"> เหตุการณ์ไม่ปกติ เนื่องจาก...</label>
+                                    <input type="text" id="g-event-detail" disabled placeholder="ระบุสาเหตุ..." class="w-full border border-gray-300 rounded-md px-3 py-1 bg-gray-100 text-sm">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-4 text-sm">
+                            <label class="flex items-center font-medium text-gray-700 cursor-pointer">
+                                <input type="checkbox" id="g-handover-next" class="mr-2 w-5 h-5 rounded text-blue-600" required> ได้ส่งมอบหน้าที่เวรฯให้กับเวรฯในผลัดต่อไปแล้ว
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <label class="block text-gray-700 mb-1">ลงชื่อผู้อยู่เวร</label>
+                                <select id="g-sign-guard" required class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm font-medium text-blue-900">
+                                    <option value="">-- กรุณาเลือกชื่อผู้อยู่เวร --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-1">ชื่อผู้รับเวร (ผลัดต่อไป)</label>
+                                <select id="g-sign-receiver" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm">
+                                    <option value="">-- กรุณาเลือกชื่อผู้รับเวร --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 p-4 rounded-md border border-amber-200">
+                        <h3 class="font-medium text-amber-900 mb-2"><i class="fas fa-user-check mr-2"></i>5. ผู้ตรวจเวร</h3>
+                        <div id="inspector-display-box" class="text-sm text-amber-950 font-medium bg-white p-3 rounded border border-amber-100 shadow-sm">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition duration-200 text-base sm:text-lg shadow-md">
+                        <i class="fas fa-save mr-2"></i>บันทึกรายงานเวรรักษาการณ์
+                    </button>
+                </form>
+            </div>
+
+            <div id="printable-area" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden p-2 sm:p-4">
+                <div id="print-report-title" class="print-report-title hidden">
+                    <h1>รายงานการอยู่เวรรักษาการณ์</h1>
+                    <p id="print-report-location">สำนักงาน อบต.เขากอบ</p>
+                </div>
+                <div class="p-3 bg-gray-50 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <span class="font-semibold text-gray-800 text-sm sm:text-base" id="table-header-title"></span>
+                    
+                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+                        <div class="flex items-center gap-2 no-print">
+                            <label class="text-xs sm:text-sm text-gray-600 whitespace-nowrap"><i class="fas fa-filter mr-1"></i>แสดงรายการ:</label>
+                            <select id="table-filter-loc" onchange="renderGuardTable()" class="border border-gray-300 rounded px-2 py-1.5 text-xs sm:text-sm bg-white font-medium text-blue-800">
+                                <option value="all">ทั้งหมดทุกสถานที่</option>
+                                <option value="สำนักงาน อบต.">เฉพาะสำนักงาน อบต.เขากอบ</option>
+                                <option value="บ้านพักเรือนรับรอง">เฉพาะบ้านพักเรือนรับรอง</option>
+                            </select>
+                        </div>
+
+                        <button onclick="printGuardReport()" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-xs sm:text-sm rounded-md shadow transition no-print">
+                            <i class="fas fa-print mr-2"></i>พิมพ์ / บันทึกเป็น PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto mt-2">
+                    <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm border border-gray-200">
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ชื่อ - นามสกุล</th>
+                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ตำแหน่ง</th>
+                                <th class="px-2 py-2 text-center font-semibold border border-gray-300">เวลาเริ่มเวร</th>
+                                <th class="px-2 py-2 text-center font-semibold border border-gray-300">เวลาสิ้นสุด</th>
+                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ผู้ส่งมอบเวร</th>
+                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ทรัพย์สิน/กุญแจ</th>
+                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">เหตุการณ์</th>
+                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ผู้รับเวรต่อ</th>
+                                <th class="px-2 py-2 text-left font-semibold border border-gray-300">ผู้ตรวจเวร</th>
+                            </tr>
+                        </thead>
+                        <tbody id="guard-table-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-admin" class="space-y-6 hidden">
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-blue-900"><i class="fas fa-user-shield mr-2"></i>ระบบจัดการข้อมูลเวรยาม (Admin Panel)</h2>
+                        <p class="text-sm text-gray-600">จัดการข้อมูลบันทึกเวรยาม สามารถแก้ไข ลบ หรือเพิ่มข้อมูลใหม่ได้ที่นี่</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="changeAdminPassword()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-md shadow transition">
+                            <i class="fas fa-key mr-1"></i> เปลี่ยนรหัสผ่าน
+                        </button>
+                        <span id="admin-user-email" class="hidden sm:inline px-2 py-1 text-xs bg-blue-50 text-blue-800 rounded border border-blue-200"></span>
+                        <button onclick="logoutAdmin()" class="px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium rounded-md shadow transition">
+                            <i class="fas fa-sign-out-alt mr-1"></i> ล็อกเอาท์
+                        </button>
+                        <button onclick="openAddRecordModal()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-md shadow transition">
+                            <i class="fas fa-plus mr-1"></i> เพิ่มรายการ
+                        </button>
+                        <button onclick="clearDataByMonth()" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md shadow transition">
+                            <i class="fas fa-trash-alt mr-1"></i> ล้างข้อมูลรายเดือน
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto mt-6">
+                    <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm border border-gray-200">
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th class="px-3 py-2 text-center border">สถานที่</th>
+                                <th class="px-3 py-2 text-center border">วันที่เริ่มเวร</th>
+                                <th class="px-3 py-2 text-left border">ชื่อ-นามสกุล</th>
+                                <th class="px-3 py-2 text-left border">ตำแหน่ง</th>
+                                <th class="px-3 py-2 text-center border">เวลาเวร</th>
+                                <th class="px-3 py-2 text-center border">ผู้ตรวจเวร</th>
+                                <th class="px-3 py-2 text-center border">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-slate-800 text-white py-4 mt-auto border-t border-slate-700 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-1">
+            <p class="text-xs text-slate-400">องค์การบริหารส่วนตำบลเขากอบ อำเภอห้วยยอด จังหวัดตรัง</p>
+            <p class="text-xs text-slate-400">จัดทำโดย สำนักปลัด อบต.</p>
+        </div>
+    </footer>
+
+    <script>
+        const SUPABASE_URL = 'https://bdvnihxlokxhldaigqjt.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkdm5paHhsb2t4aGxkYWlncWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4MDM4NDksImV4cCI6MjExMDM3OTg0OX0.xsDYS-VG_V7iB1KKGP7DkvxFirQQiiikIXpkPNhMYFw';
+        
+        let supabaseClient = null;
+
+        window.supabaseAPI = {
+            isConfigured: () => {
+                return SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && 
+                       SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE';
+            },
+            init: () => {
+                if (window.supabaseAPI.isConfigured()) {
+                    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                }
+            },
+            getSession: async () => {
+                if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อ Supabase');
+                const { data, error } = await supabaseClient.auth.getSession();
+                if (error) throw error;
+                return data.session || null;
+            },
+            getUser: async () => {
+                if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อ Supabase');
+                const { data, error } = await supabaseClient.auth.getUser();
+                if (error) return null;
+                return data.user || null;
+            },
+            signInAdmin: async (email, password) => {
+                if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อ Supabase');
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                const user = data.user;
+                if (!user || user.app_metadata?.role !== 'admin') {
+                    await supabaseClient.auth.signOut();
+                    throw new Error('บัญชีนี้ไม่มีสิทธิ์ Admin');
+                }
+                return data.session;
+            },
+            signOut: async () => {
+                if (!supabaseClient) return;
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) throw error;
+            },
+            updatePassword: async (newPassword) => {
+                if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อ Supabase');
+                const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+                if (error) throw error;
+            },
+            onAuthStateChange: (callback) => {
+                if (!supabaseClient) return { data: { subscription: { unsubscribe() {} } } };
+                return supabaseClient.auth.onAuthStateChange(callback);
+            },
+            isAdminUser: (user) => !!(user && user.app_metadata && user.app_metadata.role === 'admin'),
+            saveRecord: async (record) => {
+                if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อ Supabase');
+
+                let payload = { ...record };
+                let { data, error } = await supabaseClient
+                    .from('guard_records')
+                    .insert([payload])
+                    .select();
+
+                if (error && /inspector.*column|column.*inspector|schema cache/i.test(error.message || '')) {
+                    delete payload.inspector;
+                    ({ data, error } = await supabaseClient
+                        .from('guard_records')
+                        .insert([payload])
+                        .select());
+                    if (!error) {
+                        window.__inspectorColumnMissing = true;
+                    }
+                }
+
+                if (error) throw error;
+                return data[0];
+            },
+            loadRecords: async () => {
+                const { data, error } = await supabaseClient
+                    .from('guard_records')
+                    .select('*')
+                    .order('startDate', { ascending: true });
+                if (error) throw error;
+                return data;
+            },
+            updateRecord: async (id, data) => {
+                if (!supabaseClient) throw new Error('ยังไม่ได้เชื่อมต่อ Supabase');
+                let payload = { ...data };
+                if (payload.inspector === undefined || payload.inspector === null || payload.inspector === '') {
+                    payload.inspector = '-';
+                }
+
+                let { data: updatedRows, error } = await supabaseClient
+                    .from('guard_records')
+                    .update(payload)
+                    .eq('id', id)
+                    .select();
+
+                if (error && /inspector.*column|column.*inspector|schema cache/i.test(error.message || '')) {
+                    delete payload.inspector;
+                    ({ data: updatedRows, error } = await supabaseClient
+                        .from('guard_records')
+                        .update(payload)
+                        .eq('id', id)
+                        .select());
+                    if (!error) {
+                        window.__inspectorColumnMissing = true;
+                    }
+                }
+
+                if (error) throw error;
+                return updatedRows && updatedRows[0] ? updatedRows[0] : null;
+            },
+            deleteRecord: async (id) => {
+                const { error } = await supabaseClient
+                    .from('guard_records')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+            }
+        };
+
+        window.supabaseAPI.init();
+    </script>
+
+    <script>
+        let currentLocation = 'sao'; 
+        let currentView = 'user';    
+        let isAdminAuthenticated = false;
+        let currentAdminUser = null;
+        let guardRecords = [];
+
+        function closeEmergencyModal() {
+            const modal = document.getElementById('emergency-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        const guardLists = {
+            sao: [
+                "นอบ จันทรังษี", "นายปรีชา สามสี", "นายปุญณวิชญ์ อุ่นนุช", "นายธนวัฒน์ กิ้มเฉี้ยง",
+                "นายรชานนท์ เทียมหงษ์", "นายประหยัด เอี่ยมอักษร", "นายทองดี กังวานศิลา", "นายประชารัตน์ ประทุมวัลย์",
+                "นายก้องฤทธิ์ ผกาแก้ว", "นางอนุ อินทรวิเศษ", "นางสาวธิติมา ฉูมิ", "นางสาวอัญชลี ขวัญเมือง",
+                "นางสาวสุชาดา บริพันธ์", "นางสาวกรองแก้ว ทองศักดิ์", "นางสาววิลัยลักษณ์ หมื่นละม้าย", "นางสาวรัชดาภรณ์ จันสุข",
+                "นางสาวนรภัทร ตุลยสุข", "นางบำเพ็ญ สามสี", "นางสาวบุษรัตน์ วารีรักษ์", "นางสาวพัทธนันท์ เพ่งพิโรจ",
+                "นางสาวเนตรสุดา ณ ปัตตานี", "นางสุวนิตย์ รักงาม", "นางสาวสุภาวดี บุญเวศน์", "นางสาวนิภาพร ไทยมิตรชอบ",
+                "นางสาวปรีญานาฎ แก้วสุทธิ์", "นางฐปณีย์ ขวัญข้าว"
+            ],
+            guesthouse: [
+                "นายสุธน ศรีโภคา", "นายประสาน แต้มเพชร", "นายจรัญ พระเหมา",
+                "นายภานุวัฒน์ คงรอด", "จ่าสิบเอกจักรพล ศรีจันทร์", "นายเอกลักษณ์ คดีพิศาล"
+            ]
+        };
+
+        const positionLists = {
+            sao: [
+                "ผู้ช่วยเจ้าพนักงานธุรการ", "นักวิชาการศึกษา", "นักวิชาการสาธารณสุขฯ", "ผู้ช่วยนายช่างโยธา",
+                "นายช่างโยธาฯ", "พนักงานซ่อมไฟฟ้า-ประปา", "พนักงานขับรถบรรทุกขยะ", "คนสวน", "คนงานทั่วไป",
+                "พนักงานจดมาตรน้ำ", "พนักงานขับรถยนต์", "พนักงานจำหน่ายตั๋วเรือ", "ผู้ช่วยนักเจ้าพนักงานพัสดุ",
+                "ผู้ช่วยเจ้าพนักงานจัดเก็บรายได้", "ผู้ช่วยเจ้าพนักงานธุรการกองช่าง", "เจ้าพนักงานการเงินบัญชี",
+                "นักวิเคราะห์นโยบายและแผนฯ", "นักทรัพยากรบุคคลฯ", "นักพัฒนาชุมชน", "ผู้ช่วยนักพัฒนาชุมชน",
+                "ผู้ช่วยนักเจ้าพนักงานพัฒนาการท่องเที่ยวฯ", "ครูผู้ดูแลเด็ก", "ผู้ดูแลเด็ก", "นิติกร",
+                "นักวิชาการพัสดุ", "นักวิชาการตรวจสอบภายใน"
+            ],
+            guesthouse: [
+                "นักป้องกันและบรรเทาฯ", "ผู้ช่วยนักป้องกันและบรรเทา", "พนักงานขับรถยนต์(กู้ชีพ)",
+                "คนงานทั่วไป(กู้ชีพ)", "พนักงานขับรถบรรทุกขยะ", "คนงานประจำรถขยะ"
+            ]
+        };
+
+        function onShiftChange() {
+            const checkedShift = document.querySelector('input[name="duty_shift"]:checked');
+            if (!checkedShift) return;
+            const shiftType = checkedShift.value;
+            const startDateVal = document.getElementById('g-start-date').value;
+            
+            if (startDateVal) {
+                const startDate = new Date(startDateVal);
+                const endDateInput = document.getElementById('g-end-date');
+
+                if (shiftType === '08.30-16.30') {
+                    endDateInput.value = startDateVal;
+                } else {
+                    startDate.setDate(startDate.getDate() + 1);
+                    endDateInput.value = startDate.toISOString().split('T')[0];
+                }
+            }
+            updateInspectorInfo();
+        }
+
+        function onStartDateChange() {
+            onShiftChange();
+        }
+
+        function formatThaiDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function updateClockAndDate() {
+            const now = new Date();
+            const second = now.getSeconds();
+            const minute = now.getMinutes();
+            const hour = now.getHours();
+
+            const secDeg = (second / 60) * 360;
+            const minDeg = (minute / 60) * 360 + (second / 60) * 6;
+            const hourDeg = (hour % 12 / 12) * 360 + (minute / 60) * 30;
+
+            const secHand = document.getElementById('sec-hand');
+            const minHand = document.getElementById('min-hand');
+            const hourHand = document.getElementById('hour-hand');
+
+            if (secHand) secHand.style.transform = `rotate(${secDeg}deg)`;
+            if (minHand) minHand.style.transform = `rotate(${minDeg}deg)`;
+            if (hourHand) hourHand.style.transform = `rotate(${hourDeg}deg)`;
+
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
+            const thaiDateStr = now.toLocaleDateString('th-TH', options);
+            const dateElem = document.getElementById('current-thai-date');
+            if (dateElem) dateElem.innerText = thaiDateStr;
+        }
+        setInterval(updateClockAndDate, 1000);
+
+        async function switchView(view) {
+            if (view === 'admin' && !isAdminAuthenticated) {
+                if (!window.supabaseAPI || !window.supabaseAPI.isConfigured()) {
+                    Swal.fire({ icon: 'error', title: 'ยังไม่ได้เชื่อมต่อ Supabase', text: 'กรุณาตรวจสอบ SUPABASE_URL และ ANON KEY', confirmButtonColor: '#2563eb' });
+                    return;
+                }
+
+                const result = await Swal.fire({
+                    title: 'เข้าสู่ระบบผู้ดูแล (Admin)',
+                    html: `
+                        <div class="text-left space-y-3">
+                            <div>
+                                <label class="block text-sm text-gray-700 mb-1">อีเมล Admin</label>
+                                <input id="swal-admin-email" type="email" class="swal2-input !w-full !m-0" placeholder="admin@example.com" autocomplete="username">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-700 mb-1">รหัสผ่าน</label>
+                                <input id="swal-admin-password" type="password" class="swal2-input !w-full !m-0" placeholder="รหัสผ่าน" autocomplete="current-password">
+                            </div>
+                        </div>`,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'เข้าสู่ระบบ',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#2563eb',
+                    preConfirm: async () => {
+                        const email = document.getElementById('swal-admin-email').value.trim();
+                        const password = document.getElementById('swal-admin-password').value;
+                        if (!email || !password) {
+                            Swal.showValidationMessage('กรุณากรอกอีเมลและรหัสผ่าน');
+                            return false;
+                        }
+                        try {
+                            await window.supabaseAPI.signInAdmin(email, password);
+                            return true;
+                        } catch (error) {
+                            Swal.showValidationMessage(error.message || 'เข้าสู่ระบบไม่สำเร็จ');
+                            return false;
+                        }
+                    }
+                });
+
+                if (result.isConfirmed) {
+                    await refreshAdminAuth();
+                    if (isAdminAuthenticated) {
+                        performSwitchView('admin');
+                    }
+                }
+                return;
+            }
+            if (view === 'admin' && !isAdminAuthenticated) return;
+            performSwitchView(view);
+        }
+
+        function performSwitchView(view) {
+            currentView = view;
+            const userView = document.getElementById('view-user');
+            const adminView = document.getElementById('view-admin');
+            const navBtnUser = document.getElementById('nav-btn-user');
+            const navBtnAdmin = document.getElementById('nav-btn-admin');
+
+            if (view === 'user') {
+                userView.classList.remove('hidden');
+                adminView.classList.add('hidden');
+                navBtnUser.className = 'px-3 py-1.5 bg-blue-900 text-white rounded-md text-sm font-medium transition shadow-inner';
+                navBtnAdmin.className = 'px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition';
+                renderGuardTable();
+            } else {
+                userView.classList.add('hidden');
+                adminView.classList.remove('hidden');
+                navBtnAdmin.className = 'px-3 py-1.5 bg-blue-900 text-white rounded-md text-sm font-medium transition shadow-inner';
+                navBtnUser.className = 'px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition';
+                renderAdminTable();
+            }
+        }
+
+        async function logoutAdmin() {
+            const result = await Swal.fire({
+                title: 'ยืนยันการออกจากระบบ?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'ออกจากระบบ',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#d33'
+            });
+            if (!result.isConfirmed) return;
+
+            try {
+                await window.supabaseAPI.signOut();
+                await refreshAdminAuth();
+                performSwitchView('user');
+                Swal.fire({ icon: 'success', title: 'ออกจากระบบแล้ว', timer: 1500, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire({ icon: 'error', title: 'ออกจากระบบไม่สำเร็จ', text: error.message, confirmButtonColor: '#2563eb' });
+            }
+        }
+
+        async function changeAdminPassword() {
+            if (!isAdminAuthenticated) return;
+            const result = await Swal.fire({
+                title: 'เปลี่ยนรหัสผ่าน Admin',
+                html: `
+                    <div class="text-left space-y-3 text-sm">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-1">รหัสผ่านใหม่:</label>
+                            <input type="password" id="swal-new-pass" class="swal2-input !w-full !m-0 text-sm" autocomplete="new-password">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-1">ยืนยันรหัสผ่านใหม่:</label>
+                            <input type="password" id="swal-confirm-pass" class="swal2-input !w-full !m-0 text-sm" autocomplete="new-password">
+                        </div>
+                    </div>`,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'บันทึกรหัสผ่านใหม่',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#2563eb',
+                preConfirm: () => {
+                    const newPass = document.getElementById('swal-new-pass').value;
+                    const confirmPass = document.getElementById('swal-confirm-pass').value;
+                    if (newPass.length < 6) {
+                        Swal.showValidationMessage('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร');
+                        return false;
+                    }
+                    if (newPass !== confirmPass) {
+                        Swal.showValidationMessage('รหัสผ่านใหม่และยืนยันไม่ตรงกัน');
+                        return false;
+                    }
+                    return newPass;
+                }
+            });
+            if (!result.isConfirmed) return;
+            try {
+                await window.supabaseAPI.updatePassword(result.value);
+                Swal.fire({ icon: 'success', title: 'เปลี่ยนรหัสผ่านสำเร็จ', text: 'รหัสผ่านใหม่มีผลกับบัญชี Supabase Auth แล้ว', confirmButtonColor: '#2563eb' });
+            } catch (error) {
+                Swal.fire({ icon: 'error', title: 'เปลี่ยนรหัสผ่านไม่สำเร็จ', text: error.message, confirmButtonColor: '#2563eb' });
+            }
+        }
+
+        async function refreshAdminAuth() {
+            if (!window.supabaseAPI || !window.supabaseAPI.isConfigured()) {
+                isAdminAuthenticated = false;
+                currentAdminUser = null;
+                return;
+            }
+            try {
+                const user = await window.supabaseAPI.getUser();
+                currentAdminUser = user;
+                isAdminAuthenticated = window.supabaseAPI.isAdminUser(user);
+            } catch (error) {
+                currentAdminUser = null;
+                isAdminAuthenticated = false;
+            }
+            const emailEl = document.getElementById('admin-user-email');
+            if (emailEl) {
+                emailEl.textContent = isAdminAuthenticated && currentAdminUser?.email ? currentAdminUser.email : '';
+                emailEl.classList.toggle('hidden', !isAdminAuthenticated);
+            }
+        }
+
+        function populateDropdown(elemId, list, defaultText) {
+            const selectElem = document.getElementById(elemId);
+            selectElem.innerHTML = `<option value="">-- ${defaultText} --</option>`;
+            list.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = item;
+                selectElem.appendChild(opt);
+            });
+        }
+
+        function populateAllDropdowns() {
+            populateDropdown('g-fullname', guardLists[currentLocation] || [], 'กรุณาเลือกชื่อผู้เข้าเวร');
+            populateDropdown('g-position', positionLists[currentLocation] || [], 'กรุณาเลือกตำแหน่ง');
+            populateDropdown('g-handover-name', guardLists[currentLocation] || [], 'กรุณาเลือกชื่อผู้ส่งมอบเวร');
+            populateDropdown('g-handover-position', positionLists[currentLocation] || [], 'กรุณาเลือกตำแหน่งผู้ส่งมอบเวร');
+            populateDropdown('g-sign-receiver', guardLists[currentLocation] || [], 'กรุณาเลือกชื่อผู้รับเวร');
+            populateDropdown('g-sign-guard', guardLists[currentLocation] || [], 'กรุณาเลือกชื่อผู้อยู่เวร');
+            syncSignGuardWithFullName();
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const icon = document.getElementById('hamburger-icon');
+            menu.classList.toggle('hidden');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]));
+        }
+
+        function updateInspectorInfo() {
+            const box = document.getElementById('inspector-display-box');
+            if (currentLocation === 'sao') {
+                const checkedShift = document.querySelector('input[name="duty_shift"]:checked');
+                const shiftType = checkedShift ? checkedShift.value : '08.30-16.30';
+
+                if (shiftType === '08.30-16.30') {
+                    box.innerHTML = `
+                        <div class="space-y-1">
+                            <label class="block text-xs font-semibold text-amber-900 mb-1">เลือกผู้ตรวจเวร (กลางวัน):</label>
+                            <select id="g-inspector" required class="w-full border border-amber-300 rounded-md px-3 py-2 bg-white text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="">-- กรุณาเลือกผู้ตรวจเวร (กลางวัน) --</option>
+                                <option value="นางสาวโฉมยา สงเสือ ตำแหน่งปลัด อบต.">นางสาวโฉมยา สงเสือ ตำแหน่งปลัด อบต.</option>
+                                <option value="นางสาวบุษรัตน์ วารีรักษ์ ตำแหน่ง นักวิเคราะห์นโยบายและแผน รก.หน.สป.">นางสาวบุษรัตน์ วารีรักษ์ ตำแหน่ง นักวิเคราะห์นโยบายและแผน รก.หน.สป.</option>
+                                <option value="นางสาวพัทธนันท์ เพ่งพิโรจ ตำแหน่งนักทรัพยากรบุคคล">นางสาวพัทธนันท์ เพ่งพิโรจ ตำแหน่งนักทรัพยากรบุคคล</option>
+                            </select>
+                        </div>
+                    `;
+                } else {
+                    box.innerHTML = `
+                        <div class="space-y-1">
+                            <label class="block text-xs font-semibold text-amber-900 mb-1">ผู้ตรวจเวร (กลางคืน):</label>
+                            <select id="g-inspector" required class="w-full border border-amber-300 rounded-md px-3 py-2 bg-white text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="นายปฏิพัทธ์  เถรว่อง ตำแหน่ง รองนายก อบต.เขากอบ">นายปฏิพัทธ์  เถรว่อง ตำแหน่ง รองนายก อบต.เขากอบ</option>
+                            </select>
+                        </div>
+                    `;
+                }
+            } else {
+                box.innerHTML = `
+                    <p class="mb-1"><strong>สถานที่:</strong> บ้านพักเรือนรับรอง 80 พรรษา</p>
+                    <p><strong>ผู้ตรวจเวร:</strong> นายจักเรศ ไทยมิตรชอบ (เลขานุการนายก อบต.เขากอบ)</p>
+                    <input type="hidden" id="g-inspector" value="นายจักเรศ ไทยมิตรชอบ (เลขานุการนายก อบต.เขากอบ)">
+                `;
+            }
+        }
+
+        function updateKeyCheckboxes() {
+            const container = document.getElementById('dynamic-keys-container');
+            if (currentLocation === 'sao') {
+                container.innerHTML = `
+                    <label class="flex items-center cursor-pointer"><input type="checkbox" name="keys" value="กุญแจสำนักงาน ๑ ชุด" class="mr-2 rounded text-blue-600 w-4 h-4"> กุญแจสำนักงาน ๑ ชุด</label>
+                    <label class="flex items-center cursor-pointer"><input type="checkbox" name="keys" value="กุญแจรถยนต์ กท ๙๗๑𝟑" class="mr-2 rounded text-blue-600 w-4 h-4"> กุญแจรถยนต์ทะเบียน กท ๙๗๑๓ ตรัง</label>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label class="flex items-center cursor-pointer"><input type="checkbox" name="keys" value="กุญแจรถ กข 5007" class="mr-2 rounded text-blue-600 w-4 h-4"> กุญแจรถยนต์ส่วนกลางทะเบียน กข 5007 ตรัง</label>
+                    <label class="flex items-center cursor-pointer"><input type="checkbox" name="keys" value="กุญแจบ้านพักเรือนรับรอง" class="mr-2 rounded text-blue-600 w-4 h-4"> กุญแจบ้านพักเรือนรับรอง 1 ชุด</label>
+                `;
+            }
+        }
+
+        function syncSignGuardWithFullName() {
+            const nameSelect = document.getElementById('g-fullname');
+            const signSelect = document.getElementById('g-sign-guard');
+            if (nameSelect && signSelect) signSelect.value = nameSelect.value;
+        }
+        function syncFullNameWithSignGuard() {
+            const nameSelect = document.getElementById('g-fullname');
+            const signSelect = document.getElementById('g-sign-guard');
+            if (nameSelect && signSelect) nameSelect.value = signSelect.value;
+        }
+
+        document.getElementById('g-fullname').addEventListener('change', syncSignGuardWithFullName);
+        document.getElementById('g-sign-guard').addEventListener('change', syncFullNameWithSignGuard);
+
+        function toggleEventInput(isAbnormal) {
+            const input = document.getElementById('g-event-detail');
+            input.disabled = !isAbnormal;
+            input.classList.toggle('bg-gray-100', !isAbnormal);
+            input.classList.toggle('bg-white', isAbnormal);
+            if(isAbnormal) input.focus(); else input.value = '';
+        }
+
+        function switchLocation(loc) {
+            currentLocation = loc;
+            const formTitle = document.getElementById('form-title');
+            const deskSao = document.getElementById('desktop-loc-sao');
+            const deskGuest = document.getElementById('desktop-loc-guesthouse');
+            const mobSao = document.getElementById('mobile-loc-sao');
+            const mobGuest = document.getElementById('mobile-loc-guesthouse');
+
+            const shiftDayLabel = document.getElementById('shift-day-label');
+            const shiftDayRadio = document.querySelector('input[name="duty_shift"][value="08.30-16.30"]');
+            const shiftNightRadio = document.querySelector('input[name="duty_shift"][value="16.30-08.30"]');
+
+            const printReportLocation = document.getElementById('print-report-location');
+
+            if (loc === 'sao') {
+                formTitle.innerText = 'บันทึกการอยู่เวรรักษาการณ์: สำนักงาน อบต.เขากอบ';
+                if (printReportLocation) printReportLocation.innerText = 'สำนักงาน อบต.เขากอบ';
+                deskSao.className = 'px-3 py-1.5 bg-blue-900 text-white rounded-md text-xs font-medium transition shadow-inner';
+                deskGuest.className = 'px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition';
+                mobSao.className = 'w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-blue-800 text-white';
+                mobGuest.className = 'w-full text-left px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 text-gray-200';
+                shiftDayLabel.classList.remove('hidden');
+                shiftDayRadio.checked = true;
+            } else {
+                formTitle.innerText = 'บันทึกการอยู่เวรรักษาการณ์: บ้านพักเรือนรับรอง 80 พรรษา';
+                if (printReportLocation) printReportLocation.innerText = 'บ้านพักเรือนรับรอง 80 พรรษา';
+                deskGuest.className = 'px-3 py-1.5 bg-blue-900 text-white rounded-md text-xs font-medium transition shadow-inner';
+                deskSao.className = 'px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition';
+                mobGuest.className = 'w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-blue-800 text-white';
+                mobSao.className = 'w-full text-left px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 text-gray-200';
+                shiftDayLabel.classList.add('hidden');
+                shiftNightRadio.checked = true;
+            }
+            
+            onShiftChange();
+            populateAllDropdowns();
+            updateKeyCheckboxes();
+            updateInspectorInfo();
+        }
+
+        async function submitGuardLog(e) {
+            e.preventDefault();
+            try {
+                const shiftType = document.querySelector('input[name="duty_shift"]:checked').value;
+                const startDate = document.getElementById('g-start-date').value;
+                const endDate = document.getElementById('g-end-date').value;
+
+                let startTime = shiftType === '08.30-16.30' ? '08.30น.' : '16.30น.';
+                let endTime = shiftType === '08.30-16.30' ? '16.30น.' : '08.30น.';
+
+                const locationNameStr = currentLocation === 'sao' ? 'สำนักงาน อบต.' : 'บ้านพักเรือนรับรอง';
+                
+                const eventStatus = document.querySelector('input[name="event_status"]:checked').value;
+                const eventDetail = document.getElementById('g-event-detail').value;
+                const finalEvent = eventStatus === 'เหตุการณ์ไม่ปกติ' ? `ไม่ปกติ: ${eventDetail}` : 'ปกติ';
+
+                const selectedKeys = [];
+                document.querySelectorAll('input[name="keys"]:checked').forEach(cb => selectedKeys.push(cb.value));
+                const keysText = selectedKeys.length > 0 ? selectedKeys.join(', ') : 'ไม่มีการรับมอบทรัพย์สิน';
+
+                const handoverName = document.getElementById('g-handover-name').value || '-';
+                const handoverPos = document.getElementById('g-handover-position').value || '';
+                const fullHandover = handoverPos ? `${handoverName} (${handoverPos})` : handoverName;
+                const receiverName = document.getElementById('g-sign-receiver').value || '-';
+                const inspectorVal = document.getElementById('g-inspector') ? document.getElementById('g-inspector').value : '-';
+
+                const newRecord = {
+                    id: Date.now(),
+                    locationName: locationNameStr,
+                    recordDate: document.getElementById('g-record-date').value,
+                    fullName: document.getElementById('g-fullname').value,
+                    position: document.getElementById('g-position').value,
+                    startDate: startDate,
+                    startTime: startTime,
+                    endDate: endDate,
+                    endTime: endTime,
+                    handover: fullHandover,
+                    keys: keysText,
+                    event: finalEvent,
+                    receiver: receiverName,
+                    inspector: inspectorVal
+                };
+
+                if (window.supabaseAPI && window.supabaseAPI.isConfigured()) {
+                    try {
+                        const saved = await window.supabaseAPI.saveRecord(newRecord);
+                        guardRecords.push(saved);
+                    } catch (dbError) {
+                        console.error(dbError);
+                        Swal.fire({ icon: 'error', title: 'บันทึกฐานข้อมูลไม่สำเร็จ', text: dbError.message });
+                        return;
+                    }
+                } else {
+                    guardRecords.push(newRecord);
+                    Swal.fire({ icon: 'warning', title: 'ยังไม่ได้เชื่อมต่อ Supabase', text: 'บันทึกข้อมูลเฉพาะบนหน้าเว็บชั่วคราว' });
+                }
+
+                Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: 'บันทึกประวัติเรียบร้อยแล้ว' });
+                document.getElementById('guard-form').reset();
+                setDefaultDates();
+                switchLocation(currentLocation);
+                renderGuardTable();
+
+            } catch (error) {
+                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'กรุณาลองใหม่อีกครั้ง' });
+            }
+        }
+
+        function printGuardReport() {
+            const title = document.getElementById('print-report-location');
+            if (title) {
+                if (currentLocation === 'guesthouse') {
+                    title.innerText = 'บ้านพักเรือนรับรอง 80 พรรษา';
+                } else {
+                    title.innerText = 'สำนักงาน อบต.เขากอบ';
+                }
+            }
+            setTimeout(() => window.print(), 50);
+        }
+
+        function sortRecords(records) {
+            return records.sort((a, b) => {
+                const formatTime = (timeStr) => {
+                    if (!timeStr) return "00:00:00";
+                    return timeStr.replace('น.', '').replace('.', ':') + ":00";
+                };
+
+                const dateA = new Date(`${a.startDate}T${formatTime(a.startTime)}`);
+                const dateB = new Date(`${b.startDate}T${formatTime(b.startTime)}`);
+                
+                return dateA - dateB; 
+            });
+        }
+
+        function renderGuardTable() {
+            const tbody = document.getElementById('guard-table-body');
+            const filterVal = document.getElementById('table-filter-loc').value;
+            tbody.innerHTML = '';
+
+            let filteredRecords = filterVal !== 'all' ? guardRecords.filter(r => r.locationName === filterVal) : guardRecords;
+            filteredRecords = sortRecords(filteredRecords);
+
+            if (filteredRecords.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-gray-400">ยังไม่มีประวัติการบันทึกเวรยาม</td></tr>`;
+                return;
+            }
+
+            filteredRecords.forEach(record => {
+                const tr = document.createElement('tr');
+                const statusColor = record.event === 'ปกติ' ? 'text-green-700' : 'text-red-600 font-medium';
+                tr.innerHTML = `
+                    <td class="px-2 py-2 text-gray-900 font-medium border border-gray-200">${record.fullName}</td>
+                    <td class="px-2 py-2 text-gray-700 border border-gray-200">${record.position}</td>
+                    <td class="px-2 py-2 text-center text-gray-600 border border-gray-200 whitespace-nowrap">${formatThaiDate(record.startDate)} (${record.startTime})</td>
+                    <td class="px-2 py-2 text-center text-gray-600 border border-gray-200 whitespace-nowrap">${formatThaiDate(record.endDate)} (${record.endTime})</td>
+                    <td class="px-2 py-2 text-gray-700 border border-gray-200">${record.handover}</td>
+                    <td class="px-2 py-2 text-gray-700 border border-gray-200">${record.keys}</td>
+                    <td class="px-2 py-2 ${statusColor} border border-gray-200">${record.event}</td>
+                    <td class="px-2 py-2 text-gray-700 border border-gray-200">${record.receiver}</td>
+                    <td class="px-2 py-2 text-gray-700 border border-gray-200">${record.inspector || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = '';
+            let sorted = sortRecords([...guardRecords]);
+
+            if (sorted.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-gray-400">ไม่มีข้อมูลในระบบ</td></tr>`;
+                return;
+            }
+
+            sorted.forEach(record => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-3 py-2 text-center border font-medium text-blue-800">${record.locationName}</td>
+                    <td class="px-3 py-2 text-center border">${formatThaiDate(record.startDate)}</td>
+                    <td class="px-3 py-2 border font-medium">${record.fullName}</td>
+                    <td class="px-3 py-2 border">${record.position}</td>
+                    <td class="px-3 py-2 text-center border">${record.startTime} - ${record.endTime}</td>
+                    <td class="px-3 py-2 text-center border text-xs">${record.inspector || '-'}</td>
+                    <td class="px-3 py-2 text-center border whitespace-nowrap">
+                        <button onclick="editRecord(${record.id})" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded mr-1">แก้ไข</button>
+                        <button onclick="deleteRecord(${record.id})" class="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded">ลบ</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteRecord(id) {
+            Swal.fire({
+                title: 'ยืนยันการลบรายการ?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'ใช่, ลบเลย',
+                cancelButtonText: 'ยกเลิก'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        if (window.supabaseAPI && window.supabaseAPI.isConfigured()) {
+                            await window.supabaseAPI.deleteRecord(id);
+                        }
+                        guardRecords = guardRecords.filter(r => r.id !== id);
+                        renderAdminTable();
+                        renderGuardTable();
+                        Swal.fire('ลบสำเร็จ!', 'ข้อมูลถูกลบออกจากระบบแล้ว', 'success');
+                    } catch (error) {
+                        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+                    }
+                }
+            });
+        }
+
+        function clearDataByMonth() {
+            const monthsSet = new Set();
+            guardRecords.forEach(r => {
+                if (r.startDate && r.startDate.length >= 7) {
+                    monthsSet.add(r.startDate.substring(0, 7));
+                }
+            });
+            const availableMonths = Array.from(monthsSet).sort().reverse();
+
+            let optionsHtml = '<option value="">-- กรุณาเลือกเดือนที่ต้องการลบ --</option>';
+            if (availableMonths.length === 0) {
+                optionsHtml = '<option value="">-- ไม่พบข้อมูลประวัติเวรยามในระบบ --</option>';
+            } else {
+                const thaiMonths = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+                availableMonths.forEach(m => {
+                    const [year, month] = m.split('-');
+                    const thaiYear = parseInt(year) + 543;
+                    const monthName = thaiMonths[parseInt(month)] || month;
+                    optionsHtml += `<option value="${m}">${monthName} ${thaiYear}</option>`;
+                });
+            }
+
+            Swal.fire({
+                title: 'เลือกล้างข้อมูลตามเดือน',
+                html: `
+                    <div class="text-left space-y-3 text-sm mt-3">
+                        <label class="block text-gray-700 font-medium">เลือกเดือนและปีที่ต้องการลบข้อมูลทั้งหมด:</label>
+                        <select id="swal-month-select" class="swal2-input !w-full !m-0 text-sm bg-white">
+                            ${optionsHtml}
+                        </select>
+                        <p class="text-xs text-red-600 mt-2"><i class="fas fa-exclamation-triangle mr-1"></i>คำเตือน: ข้อมูลเวรยามในเดือนที่เลือกจะถูกลบอย่างถาวรและไม่สามารถกู้คืนได้</p>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'ถัดไป <i class="fas fa-arrow-right ml-1"></i>',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const monthVal = document.getElementById('swal-month-select').value;
+                    if (!monthVal) {
+                        Swal.showValidationMessage('กรุณาเลือกเดือนที่ต้องการลบ');
+                        return false;
+                    }
+                    return monthVal;
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const selectedMonth = result.value; 
+                    
+                    const recordsToDelete = guardRecords.filter(record => {
+                        if (!record.startDate) return false;
+                        return record.startDate.startsWith(selectedMonth);
+                    });
+
+                    if (recordsToDelete.length === 0) {
+                        Swal.fire('ไม่พบข้อมูล', `ไม่มีประวัติการเวรยามในเดือนนี้`, 'info');
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: `ยืนยันลบข้อมูล ${recordsToDelete.length} รายการ?`,
+                        text: `คุณกำลังจะลบข้อมูลทั้งหมดของเดือนที่เลือก`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        confirmButtonText: 'ใช่, ยืนยันการลบ',
+                        cancelButtonText: 'ยกเลิก'
+                    }).then(async (confirmResult) => {
+                        if (confirmResult.isConfirmed) {
+                            Swal.fire({
+                                title: 'กำลังดำเนินการลบข้อมูล...',
+                                allowOutsideClick: false,
+                                didOpen: () => Swal.showLoading()
+                            });
+
+                            try {
+                                if (window.supabaseAPI && window.supabaseAPI.isConfigured()) {
+                                    for (const rec of recordsToDelete) {
+                                        await window.supabaseAPI.deleteRecord(rec.id);
+                                    }
+                                }
+                                
+                                guardRecords = guardRecords.filter(record => !record.startDate.startsWith(selectedMonth));
+                                
+                                renderAdminTable();
+                                renderGuardTable();
+                                
+                                Swal.fire('สำเร็จ!', `ลบข้อมูลเรียบร้อยแล้ว`, 'success');
+                            } catch (error) {
+                                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function editRecord(id) {
+            const record = guardRecords.find(r => r.id === id);
+            if (!record) return;
+
+            Swal.fire({
+                title: 'แก้ไขข้อมูลเวรยาม',
+                html: `
+                    <div class="text-left space-y-3 text-sm">
+                        <div>
+                            <label class="block text-gray-700 font-medium">ชื่อ-นามสกุล:</label>
+                            <input id="swal-fullname" class="swal2-input !w-full !m-0" value="${record.fullName}">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium">ตำแหน่ง:</label>
+                            <input id="swal-position" class="swal2-input !w-full !m-0" value="${record.position}">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium">เหตุการณ์:</label>
+                            <input id="swal-event" class="swal2-input !w-full !m-0" value="${record.event}">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium">ผู้ตรวจเวร:</label>
+                            <input id="swal-inspector" class="swal2-input !w-full !m-0" value="${record.inspector || '-'}">
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'บันทึกการแก้ไข',
+                preConfirm: () => ({
+                    fullName: document.getElementById('swal-fullname').value,
+                    position: document.getElementById('swal-position').value,
+                    event: document.getElementById('swal-event').value,
+                    inspector: document.getElementById('swal-inspector').value
+                })
+            }).then(async (result) => {
+                if (result.isConfirmed && result.value) {
+                    try {
+                        const changes = result.value;
+                        if (window.supabaseAPI && window.supabaseAPI.isConfigured()) {
+                            const updated = await window.supabaseAPI.updateRecord(id, changes);
+                            Object.assign(record, updated || changes);
+                        } else {
+                            Object.assign(record, changes);
+                        }
+                        renderAdminTable();
+                        renderGuardTable();
+                        Swal.fire(window.__inspectorColumnMissing ? 'บันทึกสำเร็จ (ยกเว้นผู้ตรวจเวร)' : 'สำเร็จ!', window.__inspectorColumnMissing ? 'บันทึกข้อมูลอื่นเรียบร้อยแล้ว แต่ฐานข้อมูลยังไม่มีคอลัมน์ inspector จึงยังไม่สามารถบันทึกชื่อผู้ตรวจเวรได้ กรุณาเพิ่มคอลัมน์ inspector ใน Supabase' : 'แก้ไขข้อมูลเรียบร้อยแล้ว', window.__inspectorColumnMissing ? 'warning' : 'success');
+                    } catch (error) {
+                        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+                    }
+                }
+            });
+        }
+
+        function openAddRecordModal() {
+            Swal.fire({
+                title: 'เพิ่มรายการเวรใหม่',
+                html: `
+                    <div class="text-left space-y-3 text-sm">
+                        <div>
+                            <label class="block text-gray-700 font-medium">สถานที่:</label>
+                            <select id="swal-loc" class="swal2-input !w-full !m-0 text-sm">
+                                <option value="สำนักงาน อบต.">สำนักงาน อบต.</option>
+                                <option value="บ้านพักเรือนรับรอง">บ้านพักเรือนรับรอง</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium">วันที่ปฏิบัติงาน:</label>
+                            <input type="date" id="swal-date" class="swal2-input !w-full !m-0 text-sm" value="${new Date().toISOString().split('T')[0]}">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium">ชื่อ-นามสกุล:</label>
+                            <input id="swal-fullname" class="swal2-input !w-full !m-0 text-sm" placeholder="ระบุชื่อ-นามสกุล">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium">ตำแหน่ง:</label>
+                            <input id="swal-position" class="swal2-input !w-full !m-0 text-sm" placeholder="ระบุตำแหน่ง">
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'เพิ่มข้อมูล',
+                preConfirm: () => ({
+                    locationName: document.getElementById('swal-loc').value,
+                    startDate: document.getElementById('swal-date').value,
+                    fullName: document.getElementById('swal-fullname').value,
+                    position: document.getElementById('swal-position').value
+                })
+            }).then(async (result) => {
+                if (result.isConfirmed && result.value) {
+                    const val = result.value;
+                    if(!val.fullName || !val.position) return Swal.fire('คำเตือน', 'กรุณากรอกข้อมูลให้ครบถ้วน', 'warning');
+                    
+                    const newRec = {
+                        id: Date.now(),
+                        locationName: val.locationName,
+                        recordDate: val.startDate,
+                        fullName: val.fullName,
+                        position: val.position,
+                        startDate: val.startDate,
+                        startTime: '16.30น.',
+                        endDate: val.startDate,
+                        endTime: '08.30น.',
+                        handover: '-',
+                        keys: 'กุญแจ',
+                        event: 'ปกติ',
+                        receiver: '-',
+                        inspector: val.locationName === 'บ้านพักเรือนรับรอง'
+                            ? 'นายจักเรศ ไทยมิตรชอบ (เลขานุการนายก อบต.เขากอบ)'
+                            : 'นายปฏิพัทธ์  เถรว่อง ตำแหน่ง รองนายก อบต.เขากอบ'
+                    };
+                    try {
+                        if (window.supabaseAPI && window.supabaseAPI.isConfigured()) {
+                            const saved = await window.supabaseAPI.saveRecord(newRec);
+                            guardRecords.push(saved);
+                        } else {
+                            guardRecords.push(newRec);
+                        }
+                        renderAdminTable();
+                        renderGuardTable();
+                        Swal.fire(window.__inspectorColumnMissing ? 'บันทึกสำเร็จ (ยกเว้นผู้ตรวจเวร)' : 'สำเร็จ!', window.__inspectorColumnMissing ? 'เพิ่มข้อมูลเรียบร้อยแล้ว แต่ฐานข้อมูลยังไม่มีคอลัมน์ inspector จึงยังไม่สามารถบันทึกชื่อผู้ตรวจเวรได้ กรุณาเพิ่มคอลัมน์ inspector ใน Supabase' : 'เพิ่มรายการใหม่เรียบร้อยแล้ว', window.__inspectorColumnMissing ? 'warning' : 'success');
+                    } catch (error) {
+                        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+                    }
+                }
+            });
+        }
+
+        function setDefaultDates() {
+            const today = new Date().toISOString().split('T')[0];
+            const ids = ['g-record-date', 'g-start-date', 'g-end-date'];
+            ids.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = today; });
+        }
+
+        window.onload = async () => {
+            setDefaultDates();
+            switchLocation('sao');
+            updateClockAndDate();
+
+            if (window.supabaseAPI && window.supabaseAPI.isConfigured()) {
+                try {
+                    await refreshAdminAuth();
+                    window.supabaseAPI.onAuthStateChange(async (_event, session) => {
+                        currentAdminUser = session?.user || null;
+                        isAdminAuthenticated = window.supabaseAPI.isAdminUser(currentAdminUser);
+                        const emailEl = document.getElementById('admin-user-email');
+                        if (emailEl) {
+                            emailEl.textContent = isAdminAuthenticated && currentAdminUser?.email ? currentAdminUser.email : '';
+                            emailEl.classList.toggle('hidden', !isAdminAuthenticated);
+                        }
+                        if (!isAdminAuthenticated && currentView === 'admin') performSwitchView('user');
+                    });
+
+                    guardRecords = await window.supabaseAPI.loadRecords();
+                    renderGuardTable();
+                    if (currentView === 'admin') renderAdminTable();
+                } catch (error) {
+                    console.error('Supabase load error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'โหลดข้อมูลไม่สำเร็จ',
+                        text: error.message || 'กรุณาตรวจสอบการตั้งค่าเชื่อมต่อ Supabase',
+                        confirmButtonColor: '#2563eb'
+                    });
+                }
+            } else {
+                renderGuardTable();
+            }
+        };
+    </script>
+</body>
+</html>
