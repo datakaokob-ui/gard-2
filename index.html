@@ -369,6 +369,39 @@
                 return SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && 
                        SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE';
             },
+            loadPdfFiles: async () => {
+                if (!supabaseClient) return [];
+                const { data, error } = await supabaseClient
+                    .from('guard_pdf_files')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                if (error) {
+                    console.warn('Supabase PDF load warning:', error);
+                    return null;
+                }
+                return data;
+            },
+            savePdfFile: async (pdfObj) => {
+                if (!supabaseClient) return null;
+                const { data, error } = await supabaseClient
+                    .from('guard_pdf_files')
+                    .insert([{
+                        id: pdfObj.id || Date.now(),
+                        name: pdfObj.name,
+                        url: pdfObj.url
+                    }])
+                    .select();
+                if (error) throw error;
+                return data ? data[0] : null;
+            },
+            deletePdfFile: async (id) => {
+                if (!supabaseClient) return;
+                const { error } = await supabaseClient
+                    .from('guard_pdf_files')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+            },
             init: () => {
                 if (window.supabaseAPI.isConfigured()) {
                     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1424,8 +1457,28 @@
         }
 
         
-        // PDF Header Attachment Management
+        // PDF Header Attachment Management (Synced with Supabase & LocalStorage Fallback)
         let pdfAttachedFiles = JSON.parse(localStorage.getItem('guard_attached_pdf_files') || '[]');
+
+        async function fetchPdfFiles() {
+            if (window.supabaseAPI && window.supabaseAPI.isConfigured()) {
+                try {
+                    const cloudFiles = await window.supabaseAPI.loadPdfFiles();
+                    if (cloudFiles && Array.isArray(cloudFiles)) {
+                        pdfAttachedFiles = cloudFiles.map(item => ({
+                            id: item.id,
+                            name: item.name,
+                            url: item.url,
+                            date: item.created_at
+                        }));
+                        localStorage.setItem('guard_attached_pdf_files', JSON.stringify(pdfAttachedFiles));
+                    }
+                } catch (e) {
+                    console.error('Fetch PDF Files Error:', e);
+                }
+            }
+            fetchPdfFiles();
+        }
 
         function savePdfFilesToStorage() {
             localStorage.setItem('guard_attached_pdf_files', JSON.stringify(pdfAttachedFiles));
@@ -1530,18 +1583,39 @@
             }
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const pdfDataUrl = e.target.result;
-                pdfAttachedFiles.push({
+                const newPdfObj = {
+                    id: Date.now(),
                     name: title,
                     url: pdfDataUrl,
                     date: new Date().toISOString()
+                };
+
+                Swal.fire({
+                    title: 'กำลังอัปโหลดเอกสาร PDF...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
                 });
+
+                if (window.supabaseAPI && window.supabaseAPI.isConfigured()) {
+                    try {
+                        const savedCloud = await window.supabaseAPI.savePdfFile(newPdfObj);
+                        if (savedCloud) {
+                            newPdfObj.id = savedCloud.id;
+                        }
+                    } catch (err) {
+                        console.warn('Supabase PDF Save Warning:', err);
+                    }
+                }
+
+                pdfAttachedFiles.push(newPdfObj);
                 savePdfFilesToStorage();
+
                 Swal.fire({
                     icon: 'success',
                     title: 'แนบไฟล์ PDF สำเร็จ',
-                    text: 'เอกสารแนบถูกเพิ่มตรงส่วนหัวหน้าเว็บเรียบร้อยแล้ว',
+                    text: 'เอกสารแนบถูกบันทึกและแสดงผลตรงส่วนหัวหน้าเว็บข้ามทุกอุปกรณ์เรียบร้อยแล้ว',
                     timer: 1500,
                     showConfirmButton: false
                 }).then(() => openManagePdfModal());
@@ -1550,16 +1624,26 @@
         }
 
         function deletePdfFile(index) {
+            const target = pdfAttachedFiles[index];
+            if (!target) return;
+
             Swal.fire({
                 title: 'ยืนยันการลบเอกสาร PDF?',
-                text: `คุณกำลังจะลบ "${pdfAttachedFiles[index]?.name}"`,
+                text: `คุณกำลังจะลบ "${target.name}"`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 confirmButtonText: 'ลบเอกสาร',
                 cancelButtonText: 'ยกเลิก'
-            }).then((res) => {
+            }).then(async (res) => {
                 if (res.isConfirmed) {
+                    if (window.supabaseAPI && window.supabaseAPI.isConfigured() && target.id) {
+                        try {
+                            await window.supabaseAPI.deletePdfFile(target.id);
+                        } catch (err) {
+                            console.warn('Supabase PDF Delete Warning:', err);
+                        }
+                    }
                     pdfAttachedFiles.splice(index, 1);
                     savePdfFilesToStorage();
                     openManagePdfModal();
