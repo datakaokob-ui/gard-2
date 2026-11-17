@@ -135,6 +135,21 @@
         </div>
     </nav>
 
+    <!-- PDF Documents Announcement Banner at Header -->
+    <div id="pdf-header-banner" class="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-900 text-white shadow-inner no-print border-b border-blue-700">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-500 text-white shadow-sm flex-shrink-0">
+                    <i class="fas fa-file-pdf text-sm"></i>
+                </span>
+                <span class="font-medium text-xs sm:text-sm text-blue-100">เอกสารคำสั่ง / ประกาศเวรรักษาการณ์:</span>
+            </div>
+            <div id="pdf-header-links" class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <!-- Dynamic PDF Pills -->
+            </div>
+        </div>
+    </div>
+
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-4 sm:mt-6 mb-12 flex-grow w-full">
 
         <div id="view-user" class="space-y-6 block">
@@ -296,6 +311,9 @@
                         <p class="text-sm text-gray-600">จัดการข้อมูลบันทึกเวรยาม สามารถแก้ไข ลบ หรือเพิ่มข้อมูลใหม่ได้ที่นี่</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="openManagePdfModal()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md shadow transition">
+                            <i class="fas fa-file-pdf mr-1"></i> จัดการเอกสาร PDF หน้าเว็บ
+                        </button>
                         <button onclick="changeAdminPassword()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-md shadow transition">
                             <i class="fas fa-key mr-1"></i> เปลี่ยนรหัสผ่าน
                         </button>
@@ -1205,81 +1223,81 @@
             Swal.fire({
                 title: 'แก้ไขข้อมูลเวรยามแบบละเอียด',
                 customClass: {
-                    popup: '!max-w-2xl'
+                    popup: '!w-[96%] sm:!w-[90%] !max-w-2xl !p-3 sm:!p-6 !rounded-xl'
                 },
                 html: `
-                    <div class="text-left space-y-3 text-xs sm:text-sm max-h-[70vh] overflow-y-auto pr-1">
+                    <div class="text-left space-y-3 text-xs sm:text-sm max-h-[75vh] sm:max-h-[70vh] overflow-y-auto px-1">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">สถานที่:</label>
-                                <select id="swal-edit-loc" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm bg-white">
+                                <select id="swal-edit-loc" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm bg-white">
                                     <option value="สำนักงาน อบต." ${record.locationName === 'สำนักงาน อบต.' ? 'selected' : ''}>สำนักงาน อบต.</option>
                                     <option value="บ้านพักเรือนรับรอง" ${record.locationName === 'บ้านพักเรือนรับรอง' ? 'selected' : ''}>บ้านพักเรือนรับรอง</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">วันที่บันทึก:</label>
-                                <input type="date" id="swal-edit-recordDate" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${record.recordDate || ''}">
+                                <input type="date" id="swal-edit-recordDate" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${record.recordDate || ''}">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">ชื่อ-นามสกุล:</label>
-                                <input id="swal-edit-fullname" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.fullName)}">
+                                <input id="swal-edit-fullname" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${escapeHtml(record.fullName)}">
                             </div>
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">ตำแหน่ง:</label>
-                                <input id="swal-edit-position" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.position)}">
+                                <input id="swal-edit-position" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${escapeHtml(record.position)}">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-2">
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">วันที่เริ่มเวร:</label>
-                                <input type="date" id="swal-edit-startDate" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${record.startDate || ''}">
+                                <input type="date" id="swal-edit-startDate" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${record.startDate || ''}">
                             </div>
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">เวลาเริ่มเวร:</label>
-                                <input id="swal-edit-startTime" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.startTime)}">
+                                <input id="swal-edit-startTime" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${escapeHtml(record.startTime)}">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">ถึงวันที่ (สิ้นสุด):</label>
-                                <input type="date" id="swal-edit-endDate" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${record.endDate || ''}">
+                                <input type="date" id="swal-edit-endDate" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${record.endDate || ''}">
                             </div>
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">เวลาสิ้นสุดเวร:</label>
-                                <input id="swal-edit-endTime" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.endTime)}">
+                                <input id="swal-edit-endTime" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${escapeHtml(record.endTime)}">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-2">
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">ผู้ส่งมอบเวร:</label>
-                                <input id="swal-edit-handover" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.handover)}">
+                                <input id="swal-edit-handover" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${escapeHtml(record.handover)}">
                             </div>
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">ผู้รับเวร (ผลัดต่อไป):</label>
-                                <input id="swal-edit-receiver" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.receiver)}">
+                                <input id="swal-edit-receiver" class="swal2-input !w-full !m-0 !h-10 text-xs sm:text-sm" value="${escapeHtml(record.receiver)}">
                             </div>
                         </div>
 
                         <div>
                             <label class="block text-gray-700 font-medium mb-1">ทรัพย์สิน / กุญแจ:</label>
-                            <input id="swal-edit-keys" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.keys)}">
+                            <input id="swal-edit-keys" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${escapeHtml(record.keys)}">
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-2">
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">เหตุการณ์:</label>
-                                <input id="swal-edit-event" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.event)}">
+                                <input id="swal-edit-event" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${escapeHtml(record.event)}">
                             </div>
                             <div>
                                 <label class="block text-gray-700 font-medium mb-1">ผู้ตรวจเวร:</label>
-                                <input id="swal-edit-inspector" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" value="${escapeHtml(record.inspector || '-')}">
+                                <input id="swal-edit-inspector" class="swal2-input !w-full !m-0 !h-10 sm:!h-9 text-xs sm:text-sm" value="${escapeHtml(record.inspector || '-')}">
                             </div>
                         </div>
                     </div>
@@ -1405,7 +1423,152 @@
             ids.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = today; });
         }
 
+        
+        // PDF Header Attachment Management
+        let pdfAttachedFiles = JSON.parse(localStorage.getItem('guard_attached_pdf_files') || '[]');
+
+        function savePdfFilesToStorage() {
+            localStorage.setItem('guard_attached_pdf_files', JSON.stringify(pdfAttachedFiles));
+            renderPdfHeaderBanner();
+        }
+
+        function renderPdfHeaderBanner() {
+            const container = document.getElementById('pdf-header-links');
+            const banner = document.getElementById('pdf-header-banner');
+            if (!container || !banner) return;
+
+            if (pdfAttachedFiles.length === 0) {
+                container.innerHTML = `<span class="text-xs text-blue-300 italic">ยังไม่มีเอกสารแนบในขณะนี้</span>`;
+                return;
+            }
+
+            container.innerHTML = pdfAttachedFiles.map(file => `
+                <a href="${file.url}" target="_blank" download="${file.name}.pdf" class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-medium border border-blue-300/30 transition shadow-sm hover:scale-105">
+                    <i class="fas fa-file-pdf text-red-300"></i>
+                    <span class="max-w-[200px] sm:max-w-[280px] truncate">${escapeHtml(file.name)}</span>
+                    <i class="fas fa-external-link-alt text-[10px] text-blue-200"></i>
+                </a>
+            `).join('');
+        }
+
+        function openManagePdfModal() {
+            if (!isAdminAuthenticated) {
+                Swal.fire({ icon: 'error', title: 'เฉพาะสิทธิ์ Admin เท่านั้น', text: 'กรุณาล็อกอินเข้าสู่ระบบผู้ดูแลก่อน' });
+                return;
+            }
+
+            let filesListHtml = pdfAttachedFiles.length === 0 
+                ? '<p class="text-xs text-gray-400 italic text-center py-3">ยังไม่มีเอกสาร PDF ที่แนบตรงส่วนหัว</p>'
+                : pdfAttachedFiles.map((f, idx) => `
+                    <div class="flex items-center justify-between bg-gray-50 p-2.5 rounded border border-gray-200 text-xs sm:text-sm">
+                        <div class="flex items-center gap-2 overflow-hidden mr-2">
+                            <i class="fas fa-file-pdf text-red-600 text-base flex-shrink-0"></i>
+                            <span class="font-medium text-gray-800 truncate" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+                        </div>
+                        <div class="flex items-center gap-1 flex-shrink-0">
+                            <a href="${f.url}" target="_blank" class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs no-underline"><i class="fas fa-eye"></i> ดู</a>
+                            <button onclick="deletePdfFile(${idx})" class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-600 rounded text-xs"><i class="fas fa-trash"></i> ลบ</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            Swal.fire({
+                title: 'จัดการเอกสาร PDF ส่วนหัวหน้าเว็บ',
+                customClass: {
+                    popup: '!w-[96%] sm:!w-[90%] !max-w-xl !p-4 sm:!p-6 !rounded-xl'
+                },
+                html: `
+                    <div class="text-left space-y-4 text-xs sm:text-sm">
+                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <h4 class="font-semibold text-blue-900 mb-2"><i class="fas fa-plus-circle mr-1"></i>แนบไฟล์ PDF ใหม่</h4>
+                            <div class="space-y-2.5">
+                                <div>
+                                    <label class="block text-gray-700 mb-1">ชื่อเอกสาร / หัวข้อเรื่อง (ที่จะแสดงส่วนหัว):</label>
+                                    <input type="text" id="swal-pdf-name" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" placeholder="เช่น คำสั่ง อบต.เขากอบ เรื่อง จัดตั้งเวรรักษาการณ์">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 mb-1">เลือกไฟล์ PDF (.pdf):</label>
+                                    <input type="file" id="swal-pdf-file" accept="application/pdf" class="w-full text-xs text-gray-600 border border-gray-300 rounded p-1 bg-white">
+                                </div>
+                                <button onclick="uploadNewPdfFile()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-medium text-xs sm:text-sm shadow transition">
+                                    <i class="fas fa-upload mr-1"></i> อัปโหลดและแนบไฟล์ PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2"><i class="fas fa-list mr-1"></i>รายการเอกสารแนบปัจจุบัน (${pdfAttachedFiles.length})</h4>
+                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                ${filesListHtml}
+                            </div>
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: false,
+                showCloseButton: true
+            });
+        }
+
+        function uploadNewPdfFile() {
+            const nameInput = document.getElementById('swal-pdf-name');
+            const fileInput = document.getElementById('swal-pdf-file');
+
+            const title = nameInput ? nameInput.value.trim() : '';
+            const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+
+            if (!title) {
+                Swal.showValidationMessage('กรุณาระบุชื่อเอกสาร / หัวข้อเรื่อง');
+                return;
+            }
+            if (!file) {
+                Swal.showValidationMessage('กรุณาเลือกไฟล์ PDF');
+                return;
+            }
+            if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+                Swal.showValidationMessage('รองรับเฉพาะไฟล์ .pdf เท่านั้น');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const pdfDataUrl = e.target.result;
+                pdfAttachedFiles.push({
+                    name: title,
+                    url: pdfDataUrl,
+                    date: new Date().toISOString()
+                });
+                savePdfFilesToStorage();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'แนบไฟล์ PDF สำเร็จ',
+                    text: 'เอกสารแนบถูกเพิ่มตรงส่วนหัวหน้าเว็บเรียบร้อยแล้ว',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => openManagePdfModal());
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function deletePdfFile(index) {
+            Swal.fire({
+                title: 'ยืนยันการลบเอกสาร PDF?',
+                text: `คุณกำลังจะลบ "${pdfAttachedFiles[index]?.name}"`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'ลบเอกสาร',
+                cancelButtonText: 'ยกเลิก'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    pdfAttachedFiles.splice(index, 1);
+                    savePdfFilesToStorage();
+                    openManagePdfModal();
+                }
+            });
+        }
+
         window.onload = async () => {
+            renderPdfHeaderBanner();
             setDefaultDates();
             switchLocation('sao');
             updateClockAndDate();
