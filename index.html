@@ -25,8 +25,8 @@
     <style>
         @media print {
             body * { visibility: hidden; }
-            #printable-area, #printable-area * { visibility: visible; }
-            #printable-area { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; }
+            #printable-area, #printable-area *, #auto-schedule-printable, #auto-schedule-printable * { visibility: visible; }
+            #printable-area, #auto-schedule-printable { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; }
             .no-print { display: none !important; }
             .print-page-break { page-break-before: always; break-before: page; margin-top: 20px; }
             .print-section-header { display: block !important; text-align: center !important; margin: 0 0 14px 0 !important; padding: 0 0 8px 0 !important; width: 100% !important; }
@@ -47,37 +47,6 @@
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-gray-800 flex flex-col min-h-screen">
-
-    <!-- Emergency Contact Modal Popup -->
-    <div id="emergency-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 no-print px-4">
-        <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 text-gray-800 border-t-4 border-red-500 transform transition-all">
-            <div class="flex justify-between items-center pb-3 border-b mb-4">
-                <h3 class="text-lg font-bold text-red-600 flex items-center">
-                    <i class="fas fa-phone-alt mr-2"></i>เบอร์โทรศัพท์ติดต่อฉุกเฉิน
-                </h3>
-                <button onclick="closeEmergencyModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none p-1">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div class="space-y-3 text-sm mb-6">
-                <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded border">
-                    <span class="font-medium text-gray-700">นายก อบต.:</span>
-                    <a href="tel:0869569452" class="text-red-600 font-bold hover:text-red-700 text-base no-underline">086-9569452</a>
-                </div>
-                <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded border">
-                    <span class="font-medium text-gray-700">ปลัด อบต.:</span>
-                    <a href="tel:0934520806" class="text-red-600 font-bold hover:text-red-700 text-base no-underline">093-4520806</a>
-                </div>
-                <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded border">
-                    <span class="font-medium text-gray-700">สภ.ห้วยยอด:</span>
-                    <a href="tel:075272148" class="text-red-600 font-bold hover:text-red-700 text-base no-underline">075-272148</a>
-                </div>
-            </div>
-            <button onclick="closeEmergencyModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-4 rounded-md transition duration-200 text-sm shadow">
-                รับทราบ / ปิดหน้าต่าง
-            </button>
-        </div>
-    </div>
 
     <nav class="bg-blue-800 text-white shadow-md no-print sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -104,6 +73,9 @@
                     <button onclick="switchView('user')" id="nav-btn-user" class="px-3 py-1.5 bg-blue-900 text-white rounded-md text-sm font-medium transition shadow-inner">
                         <i class="fas fa-home mr-1"></i> หน้าหลักบันทึกเวร
                     </button>
+                    <button onclick="switchView('schedule')" id="nav-btn-schedule" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition">
+                        <i class="fas fa-calendar-alt mr-1"></i> ตารางเวรประจำเดือน
+                    </button>
                     <button onclick="switchView('admin')" id="nav-btn-admin" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition">
                         <i class="fas fa-user-shield mr-1"></i> จัดการระบบ (Admin)
                     </button>
@@ -122,6 +94,9 @@
             <button onclick="switchView('user'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-blue-800 text-white">
                 <i class="fas fa-home mr-2"></i> หน้าหลักบันทึกเวร
             </button>
+            <button onclick="switchView('schedule'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 text-gray-200">
+                <i class="fas fa-calendar-alt mr-2"></i> ตารางเวรประจำเดือน
+            </button>
             <button onclick="switchView('admin'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 text-gray-200">
                 <i class="fas fa-user-shield mr-2"></i> จัดการระบบ (Admin)
             </button>
@@ -135,30 +110,14 @@
         </div>
     </nav>
 
-    <!-- PDF Documents Announcement Banner at Header -->
-    <div id="pdf-header-banner" class="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-900 text-white shadow-inner no-print border-b border-blue-700">
-        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-500 text-white shadow-sm flex-shrink-0">
-                    <i class="fas fa-file-pdf text-sm"></i>
-                </span>
-                <span class="font-medium text-xs sm:text-sm text-blue-100">เอกสารคำสั่ง / ประกาศเวรรักษาการณ์:</span>
-            </div>
-            <div id="pdf-header-links" class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                <!-- Dynamic PDF Pills -->
-            </div>
-        </div>
-    </div>
-
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-4 sm:mt-6 mb-12 flex-grow w-full">
 
+        <!-- View User: Form & Logbook -->
         <div id="view-user" class="space-y-6 block">
-
             <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200 no-print">
                 <h2 class="text-lg sm:text-xl font-semibold mb-4 text-blue-800 border-b pb-2" id="form-title">บันทึกการอยู่เวรรักษาการณ์: สำนักงาน อบต.เขากอบ</h2>
                 
                 <form id="guard-form" onsubmit="submitGuardLog(event)" class="space-y-6">
-                    
                     <div class="bg-blue-50 p-4 rounded-md border border-blue-100">
                         <h3 class="font-medium text-blue-800 mb-3"><i class="fas fa-user mr-2"></i>1. ข้อมูลผู้ปฏิบัติหน้าที่</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -189,11 +148,11 @@
                                 <div class="flex flex-wrap gap-6 text-sm">
                                     <label id="shift-day-label" class="cursor-pointer flex items-center bg-white px-3 py-2 rounded border border-gray-200 shadow-sm">
                                         <input type="radio" name="duty_shift" value="08.30-16.30" checked onchange="onShiftChange()" class="mr-2 w-4 h-4 text-blue-600"> 
-                                        08.30-16.30 น. (เวรกลางวัน)
+                                        08.30-16.30 น. (ผู้หญิงเวรกลางวัน)
                                     </label>
                                     <label class="cursor-pointer flex items-center bg-white px-3 py-2 rounded border border-gray-200 shadow-sm">
                                         <input type="radio" name="duty_shift" value="16.30-08.30" onchange="onShiftChange()" class="mr-2 w-4 h-4 text-blue-600"> 
-                                        16.30-08.30 น. (เวรกลางคืน / ข้ามวัน)
+                                        16.30-08.30 น. (ผู้ชายเวรกลางคืน / ข้ามวัน)
                                     </label>
                                 </div>
                             </div>
@@ -303,6 +262,68 @@
             </div>
         </div>
 
+        <!-- View Schedule: Monthly Auto Roster -->
+        <div id="view-schedule" class="space-y-6 hidden">
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-4 no-print">
+                    <div>
+                        <h2 class="text-xl font-bold text-blue-900"><i class="fas fa-calendar-alt mr-2"></i>ตารางเวรประจำเดือน (จัดอัตโนมัติ)</h2>
+                        <p class="text-sm text-gray-600">ตารางเวรรักษาการณ์รายเดือนที่จัดสรรตามคำสั่งและรอบเวรอัตโนมัติ สามารถเลือกเดือนและสถานที่เพื่อพิมพ์ได้</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="changeScheduleMonth(-1)" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded text-xs sm:text-sm font-medium transition" title="เดือนก่อนหน้า">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button type="button" onclick="changeScheduleMonth(1)" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded text-xs sm:text-sm font-medium transition" title="เดือนถัดไป">
+                                เดือนถัดไป <i class="fas fa-chevron-right ml-1"></i>
+                            </button>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-600 mr-1">เดือน:</label>
+                            <select id="schedule-month" onchange="renderAutoSchedule()" class="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white font-medium text-blue-800">
+                                <option value="0">มกราคม</option>
+                                <option value="1">กุมภาพันธ์</option>
+                                <option value="2">มีนาคม</option>
+                                <option value="3">เมษายน</option>
+                                <option value="4">พฤษภาคม</option>
+                                <option value="5">มิถุนายน</option>
+                                <option value="6">กรกฎาคม</option>
+                                <option value="7">สิงหาคม</option>
+                                <option value="8">กันยายน</option>
+                                <option value="9">ตุลาคม</option>
+                                <option value="10" selected>พฤศจิกายน</option>
+                                <option value="11">ธันวาคม</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-600 mr-1">ปี พ.ศ.:</label>
+                            <select id="schedule-year" onchange="renderAutoSchedule()" class="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white font-medium text-blue-800">
+                                <option value="2026" selected>2569</option>
+                                <option value="2027">2570</option>
+                                <option value="2028">2571</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-600 mr-1">สถานที่:</label>
+                            <select id="schedule-location" onchange="renderAutoSchedule()" class="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white font-medium text-blue-800">
+                                <option value="sao">สำนักงาน อบต.เขากอบ</option>
+                                <option value="guesthouse">บ้านพักเรือนรับรอง 80 พรรษา</option>
+                            </select>
+                        </div>
+                        <button onclick="window.print()" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm rounded-md shadow transition no-print">
+                            <i class="fas fa-print mr-2"></i>พิมพ์ตารางเวร
+                        </button>
+                    </div>
+                </div>
+
+                <div id="auto-schedule-printable" class="mt-6">
+                    <!-- Rendered Schedule Table -->
+                </div>
+            </div>
+        </div>
+
+        <!-- View Admin Panel -->
         <div id="view-admin" class="space-y-6 hidden">
             <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4">
@@ -311,9 +332,6 @@
                         <p class="text-sm text-gray-600">จัดการข้อมูลบันทึกเวรยาม สามารถแก้ไข ลบ หรือเพิ่มข้อมูลใหม่ได้ที่นี่</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <button onclick="openManagePdfModal()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md shadow transition">
-                            <i class="fas fa-file-pdf mr-1"></i> จัดการเอกสาร PDF หน้าเว็บ
-                        </button>
                         <button onclick="changeAdminPassword()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-md shadow transition">
                             <i class="fas fa-key mr-1"></i> เปลี่ยนรหัสผ่าน
                         </button>
@@ -368,39 +386,6 @@
             isConfigured: () => {
                 return SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && 
                        SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE';
-            },
-            loadPdfFiles: async () => {
-                if (!supabaseClient) return [];
-                const { data, error } = await supabaseClient
-                    .from('guard_pdf_files')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                if (error) {
-                    console.warn('Supabase PDF load warning:', error);
-                    return null;
-                }
-                return data;
-            },
-            savePdfFile: async (pdfObj) => {
-                if (!supabaseClient) return null;
-                const { data, error } = await supabaseClient
-                    .from('guard_pdf_files')
-                    .insert([{
-                        id: pdfObj.id || Date.now(),
-                        name: pdfObj.name,
-                        url: pdfObj.url
-                    }])
-                    .select();
-                if (error) throw error;
-                return data ? data[0] : null;
-            },
-            deletePdfFile: async (id) => {
-                if (!supabaseClient) return;
-                const { error } = await supabaseClient
-                    .from('guard_pdf_files')
-                    .delete()
-                    .eq('id', id);
-                if (error) throw error;
             },
             init: () => {
                 if (window.supabaseAPI.isConfigured()) {
@@ -523,25 +508,18 @@
         let currentAdminUser = null;
         let guardRecords = [];
 
-        function closeEmergencyModal() {
-            const modal = document.getElementById('emergency-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-            }
-        }
-
         const guardLists = {
             sao: [
-                "นอบ จันทรังษี", "นายปรีชา สามสี", "นายปุญณวิชญ์ อุ่นนุช", "นายธนวัฒน์ กิ้มเฉี้ยง",
+                "นายนอบ จันทรังษี", "นายปรีชา สามสี", "นายปุณณวิชญ์ อุ่นนุช", "นายธนวัฒน์ กิ้มเฉี้ยง",
                 "นายรชานนท์ เทียมหงษ์", "นายประหยัด เอี่ยมอักษร", "นายทองดี กังวานศิลา", "นายประชารัตน์ ประทุมวัลย์",
-                "นายก้องฤทธิ์ ผกาแก้ว", "นางอนุ อินทรวิเศษ", "นางสาวธิติมา ฉูมิ", "นางสาวอัญชลี ขวัญเมือง",
+                "นายก้องฤทธิ์ ผกาแก้ว", "นางสาวธิติมา ฉูมิ", "นางสาวอัญชลี ขวัญเมือง",
                 "นางสาวสุชาดา บริพันธ์", "นางสาวกรองแก้ว ทองศักดิ์", "นางสาววิลัยลักษณ์ หมื่นละม้าย", "นางสาวรัชดาภรณ์ จันสุข",
                 "นางสาวนรภัทร ตุลยสุข", "นางบำเพ็ญ สามสี", "นางสาวบุษรัตน์ วารีรักษ์", "นางสาวพัทธนันท์ เพ่งพิโรจ",
                 "นางสาวเนตรสุดา ณ ปัตตานี", "นางสุวนิตย์ รักงาม", "นางสาวสุภาวดี บุญเวศน์", "นางสาวนิภาพร ไทยมิตรชอบ",
                 "นางสาวปรีญานาฎ แก้วสุทธิ์", "นางฐปณีย์ ขวัญข้าว"
             ],
             guesthouse: [
-                "นายสุธน ศรีโภคา", "นายประสาน แต้มเพชร", "นายจรัญ พระเหมา",
+                "นายสุธน ศรีโภคา", "นายประสาร แต้มเพ็ชร", "นายจรัญ พระเหมา",
                 "นายภานุวัฒน์ คงรอด", "จ่าสิบเอกจักรพล ศรีจันทร์", "นายเอกลักษณ์ คดีพิศาล",
                 "นายเช้น ชัยคช"
             ]
@@ -676,21 +654,30 @@
         function performSwitchView(view) {
             currentView = view;
             const userView = document.getElementById('view-user');
+            const scheduleView = document.getElementById('view-schedule');
             const adminView = document.getElementById('view-admin');
             const navBtnUser = document.getElementById('nav-btn-user');
+            const navBtnSchedule = document.getElementById('nav-btn-schedule');
             const navBtnAdmin = document.getElementById('nav-btn-admin');
+
+            userView.classList.add('hidden');
+            scheduleView.classList.add('hidden');
+            adminView.classList.add('hidden');
+            navBtnUser.className = 'px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition';
+            navBtnSchedule.className = 'px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition';
+            navBtnAdmin.className = 'px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition';
 
             if (view === 'user') {
                 userView.classList.remove('hidden');
-                adminView.classList.add('hidden');
                 navBtnUser.className = 'px-3 py-1.5 bg-blue-900 text-white rounded-md text-sm font-medium transition shadow-inner';
-                navBtnAdmin.className = 'px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition';
                 renderGuardTable();
+            } else if (view === 'schedule') {
+                scheduleView.classList.remove('hidden');
+                navBtnSchedule.className = 'px-3 py-1.5 bg-blue-900 text-white rounded-md text-sm font-medium transition shadow-inner';
+                renderAutoSchedule();
             } else {
-                userView.classList.add('hidden');
                 adminView.classList.remove('hidden');
                 navBtnAdmin.className = 'px-3 py-1.5 bg-blue-900 text-white rounded-md text-sm font-medium transition shadow-inner';
-                navBtnUser.className = 'px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-md text-sm font-medium transition';
                 renderAdminTable();
             }
         }
@@ -810,7 +797,7 @@
         }
 
         function escapeHtml(value) {
-            return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]));
+            return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
         }
 
         function updateInspectorInfo() {
@@ -826,6 +813,7 @@
                             <select id="g-inspector" required class="w-full border border-amber-300 rounded-md px-3 py-2 bg-white text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
                                 <option value="">-- กรุณาเลือกผู้ตรวจเวร (กลางวัน) --</option>
                                 <option value="นางสาวโฉมยา สงเสือ ตำแหน่งปลัด อบต.">นางสาวโฉมยา สงเสือ ตำแหน่งปลัด อบต.</option>
+                                <option value="นางณัฐเนตร ฉัตรกาญจน์กุล รองปลัดองค์การบริหารส่วนตำบล">นางณัฐเนตร ฉัตรกาญจน์กุล รองปลัดองค์การบริหารส่วนตำบล</option>
                                 <option value="นางสาวบุษรัตน์ วารีรักษ์ ตำแหน่ง นักวิเคราะห์นโยบายและแผน รก.หน.สป.">นางสาวบุษรัตน์ วารีรักษ์ ตำแหน่ง นักวิเคราะห์นโยบายและแผน รก.หน.สป.</option>
                                 <option value="นางสาวพัทธนันท์ เพ่งพิโรจ ตำแหน่งนักทรัพยากรบุคคล">นางสาวพัทธนันท์ เพ่งพิโรจ ตำแหน่งนักทรัพยากรบุคคล</option>
                             </select>
@@ -844,8 +832,8 @@
             } else {
                 box.innerHTML = `
                     <p class="mb-1"><strong>สถานที่:</strong> บ้านพักเรือนรับรอง 80 พรรษา</p>
-                    <p><strong>ผู้ตรวจเวร:</strong> นายจักเรศ ไทยมิตรชอบ (เลขานุการนายก อบต.เขากอบ)</p>
-                    <input type="hidden" id="g-inspector" value="นายจักเรศ ไทยมิตรชอบ (เลขานุการนายก อบต.เขากอบ)">
+                    <p><strong>ผู้ตรวจเวร:</strong> นายจักเรศ ไทยมิตรชอบ  รองนายกองค์การบริหารส่วนตำบล</p>
+                    <input type="hidden" id="g-inspector" value="นายจักเรศ ไทยมิตรชอบ  รองนายกองค์การบริหารส่วนตำบล">
                 `;
             }
         }
@@ -1098,6 +1086,218 @@
             }
         }
 
+        function changeScheduleMonth(delta) {
+            const monthSel = document.getElementById('schedule-month');
+            const yearSel = document.getElementById('schedule-year');
+            let m = parseInt(monthSel.value) + delta;
+            let y = parseInt(yearSel.value);
+            if (m > 11) {
+                m = 0;
+                y += 1;
+            } else if (m < 0) {
+                m = 11;
+                y -= 1;
+            }
+            if (!Array.from(yearSel.options).some(opt => parseInt(opt.value) === y)) {
+                const opt = document.createElement('option');
+                opt.value = String(y);
+                opt.textContent = String(y + 543);
+                yearSel.appendChild(opt);
+            }
+            monthSel.value = String(m);
+            yearSel.value = String(y);
+            renderAutoSchedule();
+        }
+
+        // Auto Schedule Generator & November 2026 PDF Data Mapping
+        function renderAutoSchedule() {
+            const month = parseInt(document.getElementById('schedule-month').value);
+            const year = parseInt(document.getElementById('schedule-year').value);
+            const loc = document.getElementById('schedule-location').value;
+            const container = document.getElementById('auto-schedule-printable');
+
+            const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            const thaiYear = year + 543;
+            const totalDays = new Date(year, month + 1, 0).getDate();
+
+            let subTitle = loc === 'sao' ? 'รายละเอียดแนบท้ายคำสั่ง ผู้อยู่เวรรักษาการณ์ประจำองค์การบริหารส่วนตำบลเขากอบ' : 'รายละเอียดแนบท้ายคำสั่ง อยู่เวรรักษาการณ์ประจำบ้านพักสวน ๘๐ พรรษามหาราช';
+
+            // Exact November 2026 Data Mapping (Day/Holiday = Female only, Night = Male only)
+            const november2026Sao = {
+                1: { day: "นางบำเพ็ญ สามสี", night: "นายก้องฤทธิ์ ผกาแก้ว" },
+                2: { day: "นางสาวกรองแก้ว ทองศักดิ์", night: "นายปุณณวิชญ์ อุ่นนุช" },
+                3: { day: "นางสาวสุภาวดี บุญเวศน์", night: "นายรชานนท์ เทียมหงษ์" },
+                4: { day: "นางสาวบุษรัตน์ วารีรักษ์", night: "นายธนวัฒน์ กิ้มเฉี้ยง" },
+                5: { day: "นางสาวเนตรสุดา ณ ปัตตานี", night: "นายทองดี กังวานศิลา" },
+                6: { day: "นางสาวพัทธนันท์ เพ่งพิโรจ", night: "นายนอบ จันทรังษี" },
+                7: { day: "นางสาวอัญชลี ขวัญเมือง", night: "นายประชารัตน์ ประทุมวัลย์" },
+                8: { day: "นางสาวธิติมา ฉูมิ", night: "นายประหยัด เอี่ยมอักษร" },
+                9: { day: "นางสาวสุวนิตย์ รักงาม", night: "นายปรีชา สามสี" },
+                10: { day: "นางสาวนรภัทร ตุลยสุข", night: "นายก้องฤทธิ์ ผกาแก้ว" },
+                11: { day: "นางสาวรัชดาภรณ์ จันสุก", night: "นายปุณณวิชญ์ อุ่นนุช" },
+                12: { day: "นางบำเพ็ญ สามสี", night: "นายรชานนท์ เทียมหงษ์" },
+                13: { day: "นางสาวธิติมา ฉูมิ", night: "นายธนวัฒน์ กิ้มเฉี้ยง" },
+                14: { day: "นางสาววิลัยลักษณ์ หมื่นละม้าย", night: "นายทองดี กังวานศิลา" },
+                15: { day: "นางสาวสุชาดา บริพันธ์", night: "นายนอบ จันทรังษี" },
+                16: { day: "นางสาววิลัยลักษณ์ หมื่นละม้าย", night: "นายประชารัตน์ ประทุมวัลย์" },
+                17: { day: "นางสาวสุชาดา บริพันธ์", night: "นายประหยัด เอี่ยมอักษร" },
+                18: { day: "นางสาวกรองแก้ว ทองศักดิ์", night: "นายปรีชา สามสี" },
+                19: { day: "นางสาวสุภาวดี บุญเวศน์", night: "นายก้องฤทธิ์ ผกาแก้ว" },
+                20: { day: "นางสาวบุษรัตน์ วารีรักษ์", night: "นายปุณณวิชญ์ อุ่นนุช" },
+                21: { day: "นางสาวกรองแก้ว ทองศักดิ์", night: "นายรชานนท์ เทียมหงษ์" },
+                22: { day: "นางสาวนิภาพร ไทยมิตรชอบ", night: "นายธนวัฒน์ กิ้มเฉี้ยง" },
+                23: { day: "นางสาวเนตรสุดา ณ ปัตตานี", night: "นายทองดี กังวานศิลา" },
+                24: { day: "นางสาวพัทธนันท์ เพ่งพิโรจ", night: "นายนอบ จันทรังษี" },
+                25: { day: "นางสาวสุวนิตย์ รักงาม", night: "นายประชารัตน์ ประทุมวัลย์" },
+                26: { day: "นางสาวนรภัทร ตุลยสุข", night: "นายประหยัด เอี่ยมอักษร" },
+                27: { day: "นางสาวรัชดาภรณ์ จันสุก", night: "นายปรีชา สามสี" },
+                28: { day: "นางสาวปรีญานาฎ แก้วสุทธิ์", night: "นายก้องฤทธิ์ ผกาแก้ว" },
+                29: { day: "นางฐปณีย์ ขวัญข้าว", night: "นายปุณณวิชญ์ อุ่นนุช" },
+                30: { day: "นางบำเพ็ญ สามสี", night: "นายรชานนท์ เทียมหงษ์" }
+            };
+
+            const november2026Guesthouse = {
+                1: "นายเช้น ชัยคช", 2: "นายสุธน ศรีโภคา", 3: "นายเอกลักษณ์ คดีพิศาล", 4: "นายประสาร แต้มเพ็ชร", 5: "นายจรัญ พระเหมา",
+                6: "นายภานุวัฒน์ คงรอด", 7: "จ.ส.อ.จักรพล ศรีจันทร์", 8: "นายเช้น ชัยคช", 9: "นายสุธน ศรีโภคา", 10: "นายเอกลักษณ์ คดีพิศาล",
+                11: "นายประสาร แต้มเพ็ชร", 12: "นายจรัญ พระเหมา", 13: "นายภานุวัฒน์ คงรอด", 14: "จ.ส.อ.จักรพล ศรีจันทร์", 15: "นายเช้น ชัยคช",
+                16: "นายสุธน ศรีโภคา", 17: "นายเอกลักษณ์ คดีพิศาล", 18: "นายประสาร แต้มเพ็ชร", 19: "นายจรัญ พระเหมา", 20: "นายภานุวัฒน์ คงรอด",
+                21: "จ.ส.อ.จักรพล ศรีจันทร์", 22: "นายเช้น ชัยคช", 23: "นายสุธน ศรีโภคา", 24: "นายเอกลักษณ์ คดีพิศาล", 25: "นายประสาร แต้มเพ็ชร",
+                26: "นายจรัญ พระเหมา", 27: "นายภานุวัฒน์ คงรอด", 28: "จ.ส.อ.จักรพล ศรีจันทร์", 29: "นายเช้น ชัยคช", 30: "นายสุธน ศรีโภคา"
+            };
+
+            let html = `
+                <div class="print-section-header hidden">
+                    <h1>รายงานตารางเวรรักษาการณ์</h1>
+                    <p>${subTitle} ประจำเดือน ${thaiMonths[month]} พ.ศ. ${thaiYear}</p>
+                </div>
+                <div class="text-center mb-6">
+                    <h3 class="text-base sm:text-lg font-bold text-gray-900">${subTitle}</h3>
+                    <h4 class="text-sm sm:text-base font-semibold text-blue-800">ประจำเดือน ${thaiMonths[month]} พ.ศ. ${thaiYear}</h4>
+                </div>
+            `;
+
+            const mod = (n, m) => ((n % m) + m) % m;
+            const baseEpochUTC = Date.UTC(2026, 10, 1); // 1 พฤศจิกายน 2569
+
+            if (loc === 'sao') {
+                html += `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm border border-gray-300">
+                            <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="px-3 py-2 text-center border border-gray-300 w-20">วันที่</th>
+                                    <th class="px-3 py-2 text-left border border-gray-300">เวรกลางวัน/วันหยุดราชการ (รายชื่อผู้หญิงทั้งหมด)<br><span class="text-xs font-normal text-gray-500">(ตั้งแต่เวลา ๐๘.๓๐ - ๑๖.๓๐ น.)</span></th>
+                                    <th class="px-3 py-2 text-left border border-gray-300">เวรกลางคืน (รายชื่อผู้ชายทั้งหมด)<br><span class="text-xs font-normal text-gray-500">(ตั้งแต่เวลา ๑๖.๓๐ - ๐๘.๓๐ น.)</span></th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+
+                const baseFemaleOrder = [
+                    "นางบำเพ็ญ สามสี", "นางสาวกรองแก้ว ทองศักดิ์", "นางสาวสุภาวดี บุญเวศน์", "นางสาวบุษรัตน์ วารีรักษ์",
+                    "นางสาวเนตรสุดา ณ ปัตตานี", "นางสาวพัทธนันท์ เพ่งพิโรจ", "นางสาวอัญชลี ขวัญเมือง", "นางสาวธิติมา ฉูมิ",
+                    "นางสุวนิตย์ รักงาม", "นางสาวนรภัทร ตุลยสุข", "นางสาวรัชดาภรณ์ จันสุข", "นางสาววิลัยลักษณ์ หมื่นละม้าย",
+                    "นางสาวสุชาดา บริพันธ์", "นางสาวนิภาพร ไทยมิตรชอบ", "นางสาวปรีญานาฎ แก้วสุทธิ์", "นางฐปณีย์ ขวัญข้าว"
+                ];
+                const allSaoFemales = guardLists.sao.filter(name => name.startsWith('นาง'));
+                const saoFemaleList = [
+                    ...baseFemaleOrder.filter(name => allSaoFemales.includes(name)),
+                    ...allSaoFemales.filter(name => !baseFemaleOrder.includes(name))
+                ];
+
+                const baseMaleOrder = [
+                    "นายก้องฤทธิ์ ผกาแก้ว", "นายปุณณวิชญ์ อุ่นนุช", "นายรชานนท์ เทียมหงษ์",
+                    "นายธนวัฒน์ กิ้มเฉี้ยง", "นายทองดี กังวานศิลา", "นายนอบ จันทรังษี",
+                    "นายประชารัตน์ ประทุมวัลย์", "นายประหยัด เอี่ยมอักษร", "นายปรีชา สามสี"
+                ];
+                const allSaoMales = guardLists.sao.filter(name => !name.startsWith('นาง'));
+                const saoMaleList = [
+                    ...baseMaleOrder,
+                    ...allSaoMales.filter(name => !baseMaleOrder.includes(name))
+                ];
+
+                for (let d = 1; d <= totalDays; d++) {
+                    let dayName = "";
+                    let nightName = "";
+                    if (year === 2026 && month === 10 && november2026Sao[d]) {
+                        dayName = november2026Sao[d].day;
+                        nightName = november2026Sao[d].night;
+                    } else {
+                        const dayOffset = Math.round((Date.UTC(year, month, d) - baseEpochUTC) / 86400000);
+                        // เลื่อนลำดับเวรกลางวัน (ผู้หญิง) และเวรกลางคืน (ผู้ชาย) ต่อเนื่องอัตโนมัติข้ามเดือน
+                        dayName = saoFemaleList[mod(dayOffset - 29, saoFemaleList.length)];
+                        nightName = saoMaleList[mod(dayOffset, saoMaleList.length)];
+                    }
+                    html += `
+                        <tr>
+                            <td class="px-3 py-2 text-center border border-gray-300 font-medium bg-gray-50">${d}</td>
+                            <td class="px-3 py-2 border border-gray-300">${escapeHtml(dayName)}</td>
+                            <td class="px-3 py-2 border border-gray-300">${escapeHtml(nightName)}</td>
+                        </tr>
+                    `;
+                }
+                html += `</tbody></table></div>`;
+            } else {
+                html += `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm border border-gray-300">
+                            <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="px-3 py-2 text-center border border-gray-300 w-16">วันที่</th>
+                                    <th class="px-3 py-2 text-left border border-gray-300">ชื่อสกุลผู้อยู่เวร</th>
+                                    <th class="px-3 py-2 text-left border border-gray-300">ตำแหน่ง</th>
+                                    <th class="px-3 py-2 text-left border border-gray-300">หมายเหตุ</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+
+                const guestRosterOrder = [
+                    "นายเช้น ชัยคช", "นายสุธน ศรีโภคา", "นายเอกลักษณ์ คดีพิศาล", "นายประสาร แต้มเพ็ชร",
+                    "นายจรัญ พระเหมา", "นายภานุวัฒน์ คงรอด", "จ่าสิบเอกจักรพล ศรีจันทร์"
+                ];
+                const guestList = [
+                    ...guestRosterOrder.filter(name => guardLists.guesthouse.includes(name)),
+                    ...guardLists.guesthouse.filter(name => !guestRosterOrder.includes(name))
+                ];
+                const guestPosMap = {
+                    "นายเช้น ชัยคช": "คนงานทั่วไป",
+                    "นายสุธน ศรีโภคา": "คนงานทั่วไป (กู้ชีพ)",
+                    "นายเอกลักษณ์ คดีพิศาล": "พนักงานขับรถยนต์ (กู้ชีพ)",
+                    "นายประสาร แต้มเพ็ชร": "คนงานประจำรถขยะ",
+                    "นายจรัญ พระเหมา": "พนักงานขับรถบรรทุกขยะ",
+                    "นายภานุวัฒน์ คงรอด": "ผู้ช่วยเจ้าพนักงานป้องกัน",
+                    "จ่าสิบเอกจักรพล ศรีจันทร์": "นักป้องกันและบรรเทาสาธารณภัย"
+                };
+
+                for (let d = 1; d <= totalDays; d++) {
+                    let name = "";
+                    const dayOffset = Math.round((Date.UTC(year, month, d) - baseEpochUTC) / 86400000);
+                    if (year === 2026 && month === 10 && november2026Guesthouse[d]) {
+                        name = november2026Guesthouse[d];
+                    } else {
+                        let idx = mod(dayOffset, guestList.length);
+                        name = guestList[idx];
+                    }
+                    let primaryName = name.split(',')[0].trim().replace('จ.ส.อ.', 'จ่าสิบเอก');
+                    let pos = guestPosMap[primaryName] || "เจ้าหน้าที่ประจำเรือนรับรอง";
+                    let note = d === 1 ? "ตั้งแต่วันที่ ๑ มอบหมายให้ นายจักเรศ ไทยมิตรชอบ ตำแหน่ง รองนายกองค์การบริหารส่วนตำบล เป็นผู้ตรวจเวร" : "";
+
+                    html += `
+                        <tr>
+                            <td class="px-3 py-2 text-center border border-gray-300 font-medium bg-gray-50">${d}</td>
+                            <td class="px-3 py-2 border border-gray-300 font-medium">${escapeHtml(name)}</td>
+                            <td class="px-3 py-2 border border-gray-300 text-gray-600">${escapeHtml(pos)}</td>
+                            <td class="px-3 py-2 border border-gray-300 text-xs text-gray-500">${escapeHtml(note)}</td>
+                        </tr>
+                    `;
+                }
+                html += `</tbody></table></div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
         function renderAdminTable() {
             const tbody = document.getElementById('admin-table-body');
             tbody.innerHTML = '';
@@ -1200,7 +1400,6 @@
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     const selectedMonth = result.value; 
-                    
                     const recordsToDelete = guardRecords.filter(record => {
                         if (!record.startDate) return false;
                         return record.startDate.startsWith(selectedMonth);
@@ -1233,12 +1432,9 @@
                                         await window.supabaseAPI.deleteRecord(rec.id);
                                     }
                                 }
-                                
                                 guardRecords = guardRecords.filter(record => !record.startDate.startsWith(selectedMonth));
-                                
                                 renderAdminTable();
                                 renderGuardTable();
-                                
                                 Swal.fire('สำเร็จ!', `ลบข้อมูลเรียบร้อยแล้ว`, 'success');
                             } catch (error) {
                                 Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
@@ -1367,7 +1563,7 @@
                         }
                         renderAdminTable();
                         renderGuardTable();
-                        Swal.fire(window.__inspectorColumnMissing ? 'บันทึกสำเร็จ (ยกเว้นผู้ตรวจเวร)' : 'สำเร็จ!', window.__inspectorColumnMissing ? 'บันทึกข้อมูลอื่นเรียบร้อยแล้ว แต่ฐานข้อมูลยังไม่มีคอลัมน์ inspector จึงยังไม่สามารถบันทึกชื่อผู้ตรวจเวรได้ กรุณาเพิ่มคอลัมน์ inspector ใน Supabase' : 'แก้ไขข้อมูลเรียบร้อยแล้ว', window.__inspectorColumnMissing ? 'warning' : 'success');
+                        Swal.fire('สำเร็จ!', 'แก้ไขข้อมูลเรียบร้อยแล้ว', 'success');
                     } catch (error) {
                         Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
                     }
@@ -1430,7 +1626,7 @@
                         event: 'ปกติ',
                         receiver: '-',
                         inspector: val.locationName === 'บ้านพักเรือนรับรอง'
-                            ? 'นายจักเรศ ไทยมิตรชอบ (เลขานุการนายก อบต.เขากอบ)'
+                            ? 'นายจักเรศ ไทยมิตรชอบ  รองนายกองค์การบริหารส่วนตำบล'
                             : 'นายปฏิพัทธ์  เถรว่อง ตำแหน่ง รองนายก อบต.เขากอบ'
                     };
                     try {
@@ -1442,7 +1638,7 @@
                         }
                         renderAdminTable();
                         renderGuardTable();
-                        Swal.fire(window.__inspectorColumnMissing ? 'บันทึกสำเร็จ (ยกเว้นผู้ตรวจเวร)' : 'สำเร็จ!', window.__inspectorColumnMissing ? 'เพิ่มข้อมูลเรียบร้อยแล้ว แต่ฐานข้อมูลยังไม่มีคอลัมน์ inspector จึงยังไม่สามารถบันทึกชื่อผู้ตรวจเวรได้ กรุณาเพิ่มคอลัมน์ inspector ใน Supabase' : 'เพิ่มรายการใหม่เรียบร้อยแล้ว', window.__inspectorColumnMissing ? 'warning' : 'success');
+                        Swal.fire('สำเร็จ!', 'เพิ่มรายการใหม่เรียบร้อยแล้ว', 'success');
                     } catch (error) {
                         Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
                     }
@@ -1456,238 +1652,7 @@
             ids.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = today; });
         }
 
-        
-        // PDF Header Attachment Management (Synced with Supabase & LocalStorage Fallback)
-        let pdfAttachedFiles = JSON.parse(localStorage.getItem('guard_attached_pdf_files') || '[]');
-
-        async function fetchPdfFiles() {
-            if (window.supabaseAPI && window.supabaseAPI.isConfigured()) {
-                try {
-                    const cloudFiles = await window.supabaseAPI.loadPdfFiles();
-                    if (cloudFiles && Array.isArray(cloudFiles)) {
-                        pdfAttachedFiles = cloudFiles.map(item => ({
-                            id: item.id,
-                            name: item.name,
-                            url: item.url,
-                            date: item.created_at
-                        }));
-                        localStorage.setItem('guard_attached_pdf_files', JSON.stringify(pdfAttachedFiles));
-                    }
-                } catch (e) {
-                    console.error('Fetch PDF Files Error:', e);
-                }
-            }
-            renderPdfHeaderBanner();
-        }
-
-        function savePdfFilesToStorage() {
-            localStorage.setItem('guard_attached_pdf_files', JSON.stringify(pdfAttachedFiles));
-            renderPdfHeaderBanner();
-        }
-
-        function openPdfFileMobile(index) {
-            const file = pdfAttachedFiles[index];
-            if (!file || !file.url) return;
-
-            try {
-                if (file.url.startsWith('data:application/pdf;base64,')) {
-                    const base64Data = file.url.split(',')[1];
-                    const byteCharacters = atob(base64Data);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    const byteArray = new Uint8Array(byteNumbers);
-                    const blob = new Blob([byteArray], { type: 'application/pdf' });
-                    const blobUrl = URL.createObjectURL(blob);
-                    
-                    const win = window.open(blobUrl, '_blank');
-                    if (!win) {
-                        const a = document.createElement('a');
-                        a.href = blobUrl;
-                        a.download = `${file.name}.pdf`;
-                        a.click();
-                    }
-                } else {
-                    window.open(file.url, '_blank');
-                }
-            } catch (err) {
-                console.error('Error opening PDF:', err);
-                const a = document.createElement('a');
-                a.href = file.url;
-                a.download = `${file.name}.pdf`;
-                a.click();
-            }
-        }
-
-        function renderPdfHeaderBanner() {
-            const container = document.getElementById('pdf-header-links');
-            const banner = document.getElementById('pdf-header-banner');
-            if (!container || !banner) return;
-
-            if (pdfAttachedFiles.length === 0) {
-                container.innerHTML = `<span class="text-xs text-blue-300 italic">ยังไม่มีเอกสารแนบในขณะนี้</span>`;
-                return;
-            }
-
-            container.innerHTML = pdfAttachedFiles.map((file, index) => `
-                <button type="button" onclick="openPdfFileMobile(${index})" class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-medium border border-blue-300/30 transition shadow-sm hover:scale-105 cursor-pointer">
-                    <i class="fas fa-file-pdf text-red-300"></i>
-                    <span class="max-w-[200px] sm:max-w-[280px] truncate">${escapeHtml(file.name)}</span>
-                    <i class="fas fa-external-link-alt text-[10px] text-blue-200"></i>
-                </button>
-            `).join('');
-        }
-
-        function openManagePdfModal() {
-            if (!isAdminAuthenticated) {
-                Swal.fire({ icon: 'error', title: 'เฉพาะสิทธิ์ Admin เท่านั้น', text: 'กรุณาล็อกอินเข้าสู่ระบบผู้ดูแลก่อน' });
-                return;
-            }
-
-            let filesListHtml = pdfAttachedFiles.length === 0 
-                ? '<p class="text-xs text-gray-400 italic text-center py-3">ยังไม่มีเอกสาร PDF ที่แนบตรงส่วนหัว</p>'
-                : pdfAttachedFiles.map((f, idx) => `
-                    <div class="flex items-center justify-between bg-gray-50 p-2.5 rounded border border-gray-200 text-xs sm:text-sm">
-                        <div class="flex items-center gap-2 overflow-hidden mr-2">
-                            <i class="fas fa-file-pdf text-red-600 text-base flex-shrink-0"></i>
-                            <span class="font-medium text-gray-800 truncate" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
-                        </div>
-                        <div class="flex items-center gap-1 flex-shrink-0">
-                            <button onclick="openPdfFileMobile(${idx})" class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs"><i class="fas fa-eye"></i> ดู</button>
-                            <button onclick="deletePdfFile(${idx})" class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-600 rounded text-xs"><i class="fas fa-trash"></i> ลบ</button>
-                        </div>
-                    </div>
-                `).join('');
-
-            Swal.fire({
-                title: 'จัดการเอกสาร PDF ส่วนหัวหน้าเว็บ',
-                customClass: {
-                    popup: '!w-[96%] sm:!w-[90%] !max-w-xl !p-4 sm:!p-6 !rounded-xl'
-                },
-                html: `
-                    <div class="text-left space-y-4 text-xs sm:text-sm">
-                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                            <h4 class="font-semibold text-blue-900 mb-2"><i class="fas fa-plus-circle mr-1"></i>แนบไฟล์ PDF ใหม่</h4>
-                            <div class="space-y-2.5">
-                                <div>
-                                    <label class="block text-gray-700 mb-1">ชื่อเอกสาร / หัวข้อเรื่อง (ที่จะแสดงส่วนหัว):</label>
-                                    <input type="text" id="swal-pdf-name" class="swal2-input !w-full !m-0 !h-9 text-xs sm:text-sm" placeholder="เช่น คำสั่ง อบต.เขากอบ เรื่อง จัดตั้งเวรรักษาการณ์">
-                                </div>
-                                <div>
-                                    <label class="block text-gray-700 mb-1">เลือกไฟล์ PDF (.pdf):</label>
-                                    <input type="file" id="swal-pdf-file" accept="application/pdf" class="w-full text-xs text-gray-600 border border-gray-300 rounded p-1 bg-white">
-                                </div>
-                                <button onclick="uploadNewPdfFile()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-medium text-xs sm:text-sm shadow transition">
-                                    <i class="fas fa-upload mr-1"></i> อัปโหลดและแนบไฟล์ PDF
-                                </button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h4 class="font-semibold text-gray-800 mb-2"><i class="fas fa-list mr-1"></i>รายการเอกสารแนบปัจจุบัน (${pdfAttachedFiles.length})</h4>
-                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                                ${filesListHtml}
-                            </div>
-                        </div>
-                    </div>
-                `,
-                showConfirmButton: false,
-                showCloseButton: true
-            });
-        }
-
-        function uploadNewPdfFile() {
-            const nameInput = document.getElementById('swal-pdf-name');
-            const fileInput = document.getElementById('swal-pdf-file');
-
-            const title = nameInput ? nameInput.value.trim() : '';
-            const file = fileInput && fileInput.files ? fileInput.files[0] : null;
-
-            if (!title) {
-                Swal.showValidationMessage('กรุณาระบุชื่อเอกสาร / หัวข้อเรื่อง');
-                return;
-            }
-            if (!file) {
-                Swal.showValidationMessage('กรุณาเลือกไฟล์ PDF');
-                return;
-            }
-            if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-                Swal.showValidationMessage('รองรับเฉพาะไฟล์ .pdf เท่านั้น');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const pdfDataUrl = e.target.result;
-                const newPdfObj = {
-                    id: Date.now(),
-                    name: title,
-                    url: pdfDataUrl,
-                    date: new Date().toISOString()
-                };
-
-                Swal.fire({
-                    title: 'กำลังอัปโหลดเอกสาร PDF...',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
-                });
-
-                if (window.supabaseAPI && window.supabaseAPI.isConfigured()) {
-                    try {
-                        const savedCloud = await window.supabaseAPI.savePdfFile(newPdfObj);
-                        if (savedCloud) {
-                            newPdfObj.id = savedCloud.id;
-                        }
-                    } catch (err) {
-                        console.warn('Supabase PDF Save Warning:', err);
-                    }
-                }
-
-                pdfAttachedFiles.push(newPdfObj);
-                savePdfFilesToStorage();
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'แนบไฟล์ PDF สำเร็จ',
-                    text: 'เอกสารแนบถูกบันทึกและพร้อมเปิดอ่านบนมือถือและทุกอุปกรณ์เรียบร้อยแล้ว',
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(() => openManagePdfModal());
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function deletePdfFile(index) {
-            const target = pdfAttachedFiles[index];
-            if (!target) return;
-
-            Swal.fire({
-                title: 'ยืนยันการลบเอกสาร PDF?',
-                text: `คุณกำลังจะลบ "${target.name}"`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                confirmButtonText: 'ลบเอกสาร',
-                cancelButtonText: 'ยกเลิก'
-            }).then(async (res) => {
-                if (res.isConfirmed) {
-                    if (window.supabaseAPI && window.supabaseAPI.isConfigured() && target.id) {
-                        try {
-                            await window.supabaseAPI.deletePdfFile(target.id);
-                        } catch (err) {
-                            console.warn('Supabase PDF Delete Warning:', err);
-                        }
-                    }
-                    pdfAttachedFiles.splice(index, 1);
-                    savePdfFilesToStorage();
-                    openManagePdfModal();
-                }
-            });
-        }
-
         window.onload = async () => {
-            renderPdfHeaderBanner();
             setDefaultDates();
             switchLocation('sao');
             updateClockAndDate();
@@ -1708,15 +1673,8 @@
 
                     guardRecords = await window.supabaseAPI.loadRecords();
                     renderGuardTable();
-                    if (currentView === 'admin') renderAdminTable();
                 } catch (error) {
                     console.error('Supabase load error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'โหลดข้อมูลไม่สำเร็จ',
-                        text: error.message || 'กรุณาตรวจสอบการตั้งค่าเชื่อมต่อ Supabase',
-                        confirmButtonColor: '#2563eb'
-                    });
                 }
             } else {
                 renderGuardTable();
